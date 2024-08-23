@@ -54,16 +54,13 @@
         let currentIndex = 0;
         let videoHistory = [];
         const maxHistorySize = 5; // Maximum number of recent videos to track
-        const swipeThreshold = 0.5; // Threshold for swipe detection (50% of screen width)
-        const firstVideoIndex = 0; // Index of the first video
 
         const videoPlayer = document.getElementById('videoPlayer');
-        let videoList = [...videoLinks]; // Clone videoLinks to manage video removal
 
         function playVideo(index) {
-            videoPlayer.src = videoList[index];
-            videoPlayer.controls = (index !== firstVideoIndex); // Show controls for all except the first video
-            if (index === firstVideoIndex) {
+            videoPlayer.src = videoLinks[index];
+            videoPlayer.controls = (index !== 0); // Show controls for all except the first video
+            if (index === 0) {
                 videoPlayer.muted = true; // Mute the first video for autoplay
                 videoPlayer.autoplay = true; // Ensure autoplay
             } else {
@@ -91,7 +88,7 @@
 
         function getRandomIndex(excludeIndexes) {
             let randomIndex;
-            const validIndexes = videoList
+            const validIndexes = videoLinks
                 .map((_, index) => index)
                 .filter(index => !excludeIndexes.includes(index));
             
@@ -115,22 +112,13 @@
             if (videoHistory.length > maxHistorySize) {
                 videoHistory.shift(); // Keep the history size within the limit
             }
-            if (videoList.length === 0) {
-                // No more videos to choose from
-                return;
-            }
             currentIndex = getRandomIndex(videoHistory);
-            if (currentIndex === firstVideoIndex) {
-                // Avoid selecting the first video again
-                currentIndex = getRandomIndex(videoHistory);
-            }
             playVideo(currentIndex);
         }
 
         function handleTouchStart(evt) {
             const firstTouch = evt.touches[0];
             xDown = firstTouch.clientX;
-            windowWidth = window.innerWidth;
         }
 
         function handleTouchMove(evt) {
@@ -141,24 +129,22 @@
             let xUp = evt.touches[0].clientX;
             let xDiff = xDown - xUp;
 
-            if (Math.abs(xDiff) > windowWidth * swipeThreshold) {
-                if (xDiff > 0) {
-                    swipeRight(); // Swipe right advances to a new random video
-                } else {
-                    swipeLeft(); // Swipe left goes back to the previous video
-                }
-                xDown = null; // Reset value
+            if (xDiff > 0) {
+                swipeRight(); // Swipe right advances to a new random video
+            } else {
+                swipeLeft(); // Swipe left goes back to the previous video
             }
+
+            xDown = null; // Reset value
         }
 
         let xDown = null;
-        let windowWidth = window.innerWidth;
 
         document.addEventListener('touchstart', handleTouchStart, false);
         document.addEventListener('touchmove', handleTouchMove, false);
 
         // Initial video play
-        playVideo(firstVideoIndex);
+        playVideo(currentIndex);
     </script>
 </body>
 </html>
