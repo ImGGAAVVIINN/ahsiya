@@ -63,7 +63,7 @@
 
         function playVideo(index) {
             videoPlayer.src = videoList[index];
-            videoPlayer.controls = true; // Show controls for all videos
+            videoPlayer.controls = (index !== firstVideoIndex); // Hide controls for the first video
             videoPlayer.muted = !interacted; // Mute initially if no user interaction
             videoPlayer.play();
         }
