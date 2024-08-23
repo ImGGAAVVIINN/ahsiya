@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Non-Repeating Video System</title>
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+        #videoContainer {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        video {
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <div id="videoContainer">
+        <video id="videoPlayer" controls autoplay></video>
+    </div>
+    
+    <script>
+        const videoLinks = [
+        'https://scontent.xx.fbcdn.net/v/t42.3356-2/442418438_7954436024587296_2927986135207136767_n.mp4?_nc_cat=109&ccb=1-7&_nc_sid=4f86bc&_nc_ohc=vD2srcxYj9EQ7kNvgEFCdzT&_nc_ht=scontent.xx&oh=03_Q7cD1QEER886Gwt2WVQlhy7-6Kv5I4fIePk_iGRH6r3c_h1kUA&oe=66CA7457&dl=1',
+        'https://cdn.discordapp.com/attachments/1008572901382951012/1268921770753130526/lv_0_20240802225004.mp4?ex=66c9de7d&is=66c88cfd&hm=4e759bc9df503482a2c0f7592e906b72d53c73cb37f1c32c0046efb873f812eb&',
+        'https://cdn.discordapp.com/attachments/1008572901382951012/1264203260840120473/lv_0_20240720225010.mp4?ex=66c9d789&is=66c88609&hm=ce8d0c64624af472a3068e7c681ad906336826ce0a4e7451a664bf0547186ea3&',
+        'https://cdn.discordapp.com/attachments/1008572901382951012/1248577383670222878/RDT_20240606_121101.mp4?ex=66c9af4d&is=66c85dcd&hm=8e506932cfec7a2666d6c66783049e16917783422ccd92d0b4a96cd0581de991&',
+        'https://media.discordapp.net/attachments/1008572901382951012/1248577367169962074/RDT_20240606_122958.mp4?ex=66c9af49&is=66c85dc9&hm=bfbf42eeb7fc2a53ab3e6180065983e95e95e7cc3b612486ca136d7880ef0426&', 
+        'https://media.discordapp.net/attachments/1008572901382951012/1248577368402952232/RDT_20240606_122415.mp4?ex=66c9af4a&is=66c85dca&hm=affe06826f014d1db6dc0c95732c00e932a908a43ea588157df204ed707f9b7d&',
+        'https://media.discordapp.net/attachments/1008572901382951012/1248577367824269312/RDT_20240606_122923.mp4?ex=66c9af49&is=66c85dc9&hm=c767030f46f690d9d5f09c4b5014e3cf81d7d1903fc7b71cceb6d3761ba7ce0d&',
+        ];
+
+
+        let currentIndex = 0;
+        let videoHistory = [];
+        const maxHistorySize = 5; // Maximum number of recent videos to track
+
+        const videoPlayer = document.getElementById('videoPlayer');
+
+        function playVideo(index) {
+            videoPlayer.src = videoLinks[index];
+            videoPlayer.play();
+        }
+
+        function adjustVideoSize() {
+            const container = document.getElementById('videoContainer');
+            const containerWidth = container.clientWidth;
+            const containerHeight = container.clientHeight;
+            const videoAspectRatio = videoPlayer.videoWidth / videoPlayer.videoHeight;
+
+            if (containerWidth / containerHeight > videoAspectRatio) {
+                videoPlayer.style.width = 'auto';
+                videoPlayer.style.height = '100%';
+            } else {
+                videoPlayer.style.width = '100%';
+                videoPlayer.style.height = 'auto';
+            }
+        }
+
+        videoPlayer.addEventListener('loadedmetadata', adjustVideoSize);
+
+        function getRandomIndex(excludeIndexes) {
+            let randomIndex;
+            const validIndexes = videoLinks
+                .map((_, index) => index)
+                .filter(index => !excludeIndexes.includes(index));
+            
+            if (validIndexes.length === 0) {
+                return excludeIndexes[Math.floor(Math.random() * excludeIndexes.length)];
+            }
+            
+            randomIndex = validIndexes[Math.floor(Math.random() * validIndexes.length)];
+            return randomIndex;
+        }
+
+        function swipeLeft() {
+            if (videoHistory.length > 0) {
+                currentIndex = videoHistory.pop();
+                playVideo(currentIndex);
+            }
+        }
+
+        function swipeRight() {
+            videoHistory.push(currentIndex);
+            if (videoHistory.length > maxHistorySize) {
+                videoHistory.shift(); // Keep the history size within the limit
+            }
+            currentIndex = getRandomIndex(videoHistory);
+            playVideo(currentIndex);
+        }
+
+        function handleTouchStart(evt) {
+            const firstTouch = evt.touches[0];
+            xDown = firstTouch.clientX;
+        }
+
+        function handleTouchMove(evt) {
+            if (!xDown) {
+                return;
+            }
+
+            let xUp = evt.touches[0].clientX;
+            let xDiff = xDown - xUp;
+
+            if (xDiff > 0) {
+                swipeRight(); // Swipe right advances to a new random video
+            } else {
+                swipeLeft(); // Swipe left goes back to the previous video
+            }
+
+            xDown = null; // Reset value
+        }
+
+        let xDown = null;
+
+        document.addEventListener('touchstart', handleTouchStart, false);
+        document.addEventListener('touchmove', handleTouchMove, false);
+
+        // Initial video play
+        playVideo(currentIndex);
+    </script>
+</body>
+</html>
