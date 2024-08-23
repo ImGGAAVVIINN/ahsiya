@@ -47,18 +47,23 @@
         'https://cdn.discordapp.com/attachments/1008572901382951012/1243866549232734248/RDT_20240525_192752.mp4?ex=66c9af7f&is=66c85dff&hm=4a434d5c42c9114c731dd344570f191c72aa881e111cf2cd2a67fa5a5365fb0d&',
         'https://cdn.discordapp.com/attachments/1008572901382951012/1243510036781731850/lv_0_20240524202351.mp4?ex=66c9b4f8&is=66c86378&hm=97f77982f6f2c27df395d0534fc213462a0172fcde7ee0aa88f17f606145df89&',
         'https://cdn.discordapp.com/attachments/1008572901382951012/1243492185572118580/5baf2b70b18ef7c3d0e4d11bacd7c344.mp4?ex=66c9a458&is=66c852d8&hm=04db736d3a6198d9932fb01f5fda92b8bb8dc55125e69a2e350791c3b9951fe8&',
+        'https://cdn.discordapp.com/attachments/1008572901382951012/1241362454722904215/lv_0_20240518220937.mp4?ex=66c9cde0&is=66c87c60&hm=2df1b94f1a9977f5248662747a95ef3fc702ae55d8252fde6dbce609614555c4&',
+        'https://cdn.discordapp.com/attachments/1008572901382951012/1235544161558728805/d40d1674dc398792c742c6097c29de11.mp4?ex=66c9bb2b&is=66c869ab&hm=b0606505913eb0cc0c9d152546e5d225ae79dde8ea0e4d2c5fd710ca63b8028c&',
         ];
 
         let currentIndex = 0;
         let videoHistory = [];
         const maxHistorySize = 5; // Maximum number of recent videos to track
+        const swipeThreshold = 0.5; // Threshold for swipe detection (50% of screen width)
+        const firstVideoIndex = 0; // Index of the first video
 
         const videoPlayer = document.getElementById('videoPlayer');
+        let videoList = [...videoLinks]; // Clone videoLinks to manage video removal
 
         function playVideo(index) {
-            videoPlayer.src = videoLinks[index];
-            videoPlayer.controls = (index !== 0); // Show controls for all except the first video
-            if (index === 0) {
+            videoPlayer.src = videoList[index];
+            videoPlayer.controls = (index !== firstVideoIndex); // Show controls for all except the first video
+            if (index === firstVideoIndex) {
                 videoPlayer.muted = true; // Mute the first video for autoplay
                 videoPlayer.autoplay = true; // Ensure autoplay
             } else {
@@ -86,7 +91,7 @@
 
         function getRandomIndex(excludeIndexes) {
             let randomIndex;
-            const validIndexes = videoLinks
+            const validIndexes = videoList
                 .map((_, index) => index)
                 .filter(index => !excludeIndexes.includes(index));
             
@@ -110,13 +115,22 @@
             if (videoHistory.length > maxHistorySize) {
                 videoHistory.shift(); // Keep the history size within the limit
             }
+            if (videoList.length === 0) {
+                // No more videos to choose from
+                return;
+            }
             currentIndex = getRandomIndex(videoHistory);
+            if (currentIndex === firstVideoIndex) {
+                // Avoid selecting the first video again
+                currentIndex = getRandomIndex(videoHistory);
+            }
             playVideo(currentIndex);
         }
 
         function handleTouchStart(evt) {
             const firstTouch = evt.touches[0];
             xDown = firstTouch.clientX;
+            windowWidth = window.innerWidth;
         }
 
         function handleTouchMove(evt) {
@@ -127,22 +141,24 @@
             let xUp = evt.touches[0].clientX;
             let xDiff = xDown - xUp;
 
-            if (xDiff > 0) {
-                swipeRight(); // Swipe right advances to a new random video
-            } else {
-                swipeLeft(); // Swipe left goes back to the previous video
+            if (Math.abs(xDiff) > windowWidth * swipeThreshold) {
+                if (xDiff > 0) {
+                    swipeRight(); // Swipe right advances to a new random video
+                } else {
+                    swipeLeft(); // Swipe left goes back to the previous video
+                }
+                xDown = null; // Reset value
             }
-
-            xDown = null; // Reset value
         }
 
         let xDown = null;
+        let windowWidth = window.innerWidth;
 
         document.addEventListener('touchstart', handleTouchStart, false);
         document.addEventListener('touchmove', handleTouchMove, false);
 
         // Initial video play
-        playVideo(currentIndex);
+        playVideo(firstVideoIndex);
     </script>
 </body>
 </html>
