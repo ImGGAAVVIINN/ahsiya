@@ -100,27 +100,29 @@
         }
 
         function swipeLeft() {
-            if (videoHistory.length > 0) {
+            if (videoHistory.length > 0 && currentIndex !== firstVideoIndex) {
                 currentIndex = videoHistory.pop();
                 playVideo(currentIndex);
             }
         }
 
         function swipeRight() {
-            videoHistory.push(currentIndex);
-            if (videoHistory.length > maxHistorySize) {
-                videoHistory.shift(); // Keep the history size within the limit
-            }
-            if (videoList.length === 0) {
-                // No more videos to choose from
-                return;
-            }
-            currentIndex = getRandomIndex(videoHistory);
-            if (currentIndex === firstVideoIndex) {
-                // Avoid selecting the first video again
+            if (currentIndex !== firstVideoIndex) {
+                videoHistory.push(currentIndex);
+                if (videoHistory.length > maxHistorySize) {
+                    videoHistory.shift(); // Keep the history size within the limit
+                }
+                if (videoList.length === 0) {
+                    // No more videos to choose from
+                    return;
+                }
                 currentIndex = getRandomIndex(videoHistory);
+                if (currentIndex === firstVideoIndex) {
+                    // Avoid selecting the first video again
+                    currentIndex = getRandomIndex(videoHistory);
+                }
+                playVideo(currentIndex);
             }
-            playVideo(currentIndex);
         }
 
         function handleTouchStart(evt) {
@@ -130,8 +132,8 @@
         }
 
         function handleTouchMove(evt) {
-            if (!xDown) {
-                return;
+            if (!xDown || currentIndex === firstVideoIndex) {
+                return; // Prevent swiping if the current video is the first one
             }
 
             let xUp = evt.touches[0].clientX;
@@ -153,6 +155,14 @@
 
         document.addEventListener('touchstart', handleTouchStart, false);
         document.addEventListener('touchmove', handleTouchMove, false);
+
+        // Redirect to the second video after the first video finishes playing
+        videoPlayer.addEventListener('ended', function() {
+            if (currentIndex === firstVideoIndex) {
+                currentIndex = 1; // Set to the second video in the list
+                playVideo(currentIndex);
+            }
+        });
 
         // Initial video play
         playVideo(currentIndex);
