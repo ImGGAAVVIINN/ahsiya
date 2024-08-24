@@ -26,15 +26,28 @@
             width: auto;
             height: auto;
         }
+        #redirectCircle {
+            position: absolute;
+            width: 150px;
+            height: 150px;
+            
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: none;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
     <div id="videoContainer">
-        <video id="videoPlayer" muted></video>
+        <video id="videoPlayer" autoplay muted></video>
+        <div id="redirectCircle"></div>
     </div>
     
     <script>
         const videoLinks = [
+        'https://cdn.discordapp.com/attachments/1276549972547993671/1276856989447880764/ahsiya-intro.mp4?ex=66cb0d3d&is=66c9bbbd&hm=e87fb7f16a042120ad067057d3f2ba66eb7156e537161a07fd15edd49320dcf6&',
         'https://cdn.discordapp.com/attachments/1008572901382951012/1276570423240429658/ezgif-6-133c5dcada.mp4?ex=66ca025a&is=66c8b0da&hm=351c0be8c99b5047070fe9dbbc8dee77ca14130cf14326681275a3d05d11cb8b&',
         'https://scontent.xx.fbcdn.net/v/t42.3356-2/442418438_7954436024587296_2927986135207136767_n.mp4?_nc_cat=109&ccb=1-7&_nc_sid=4f86bc&_nc_ohc=vD2srcxYj9EQ7kNvgEFCdzT&_nc_ht=scontent.xx&oh=03_Q7cD1QEER886Gwt2WVQlhy7-6Kv5I4fIePk_iGRH6r3c_h1kUA&oe=66CA7457&dl=1',
         'https://cdn.discordapp.com/attachments/1008572901382951012/1268921770753130526/lv_0_20240802225004.mp4?ex=66c9de7d&is=66c88cfd&hm=4e759bc9df503482a2c0f7592e906b72d53c73cb37f1c32c0046efb873f812eb&',
@@ -58,6 +71,7 @@
         const firstVideoIndex = 0; // Index of the first video
 
         const videoPlayer = document.getElementById('videoPlayer');
+        const redirectCircle = document.getElementById('redirectCircle');
         let videoList = [...videoLinks]; // Clone videoLinks to manage video removal
         let interacted = false; // To track if user has interacted
 
@@ -66,6 +80,13 @@
             videoPlayer.controls = (index !== firstVideoIndex); // Hide controls for the first video
             videoPlayer.muted = !interacted; // Mute initially if no user interaction
             videoPlayer.play();
+
+            // Show the redirect circle only for the first video
+            if (index === firstVideoIndex) {
+                redirectCircle.style.display = 'block';
+            } else {
+                redirectCircle.style.display = 'none';
+            }
         }
 
         function adjustVideoSize() {
@@ -100,29 +121,27 @@
         }
 
         function swipeLeft() {
-            if (videoHistory.length > 0 && currentIndex !== firstVideoIndex) {
+            if (videoHistory.length > 0) {
                 currentIndex = videoHistory.pop();
                 playVideo(currentIndex);
             }
         }
 
         function swipeRight() {
-            if (currentIndex !== firstVideoIndex) {
-                videoHistory.push(currentIndex);
-                if (videoHistory.length > maxHistorySize) {
-                    videoHistory.shift(); // Keep the history size within the limit
-                }
-                if (videoList.length === 0) {
-                    // No more videos to choose from
-                    return;
-                }
-                currentIndex = getRandomIndex(videoHistory);
-                if (currentIndex === firstVideoIndex) {
-                    // Avoid selecting the first video again
-                    currentIndex = getRandomIndex(videoHistory);
-                }
-                playVideo(currentIndex);
+            videoHistory.push(currentIndex);
+            if (videoHistory.length > maxHistorySize) {
+                videoHistory.shift(); // Keep the history size within the limit
             }
+            if (videoList.length === 0) {
+                // No more videos to choose from
+                return;
+            }
+            currentIndex = getRandomIndex(videoHistory);
+            if (currentIndex === firstVideoIndex) {
+                // Avoid selecting the first video again
+                currentIndex = getRandomIndex(videoHistory);
+            }
+            playVideo(currentIndex);
         }
 
         function handleTouchStart(evt) {
@@ -132,8 +151,8 @@
         }
 
         function handleTouchMove(evt) {
-            if (!xDown || currentIndex === firstVideoIndex) {
-                return; // Prevent swiping if the current video is the first one
+            if (!xDown) {
+                return;
             }
 
             let xUp = evt.touches[0].clientX;
@@ -156,12 +175,9 @@
         document.addEventListener('touchstart', handleTouchStart, false);
         document.addEventListener('touchmove', handleTouchMove, false);
 
-        // Redirect to the second video after the first video finishes playing
-        videoPlayer.addEventListener('ended', function() {
-            if (currentIndex === firstVideoIndex) {
-                currentIndex = 1; // Set to the second video in the list
-                playVideo(currentIndex);
-            }
+        // Redirect to the second video when the circle is clicked
+        redirectCircle.addEventListener('click', () => {
+            playVideo(1); // Play the second video (index 1)
         });
 
         // Initial video play
