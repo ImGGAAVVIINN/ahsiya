@@ -51,11 +51,7 @@
         'https://cdn.discordapp.com/attachments/1276549972547993671/1276874853902712978/ahsiya-intro.mp4?ex=66cb1de0&is=66c9cc60&hm=8c2c4e60689c7840efe5f85593ac868df66f090331773e52d579b340848af6d9&',
         'https://instagram.fmel5-1.fna.fbcdn.net/v/t42.3356-2/456710047_8078702482215644_1381525063638983318_n.mp4?_nc_cat=103&ccb=1-7&_nc_sid=4f86bc&_nc_ohc=-mOOX0kfW14Q7kNvgEYyUTg&_nc_ht=instagram.fmel5-1.fna&oh=03_Q7cD1QFljZTbNLnzE08CscxenX8z_Uhl7Sn6gScyBm4ijMycog&oe=66CBAD82&dl=1',
         'https://instagram.fmel5-1.fna.fbcdn.net/v/t42.3356-2/455987104_8015682218479585_2891064139904794924_n.mp4?_nc_cat=105&ccb=1-7&_nc_sid=4f86bc&_nc_ohc=2n_k9xT2C7MQ7kNvgFBda4m&_nc_ht=instagram.fmel5-1.fna&oh=03_Q7cD1QHFYxH6CBXO32m-XlIGGyZL5SUIwnrQh-1nAWtGNrER6w&oe=66CBADCB&dl=1',
-        'https://instagram.fmel5-1.fna.fbcdn.net/v/t15.3394-10/456535215_9122404307774551_7140050560380870302_n.jpg?stp=dst-jpg_p180x540&_nc_cat=104&ccb=1-7&_nc_sid=569220&_nc_ohc=4J6OHkEuQm4Q7kNvgG4EnG4&_nc_ht=instagram.fmel5-1.fna&oh=03_Q7cD1QGkI9OLsnFDuFyDqmB22s_NhURfnKKeiu-_g_K0e48t1g&oe=66CF9393',
-        'https://instagram.fmel5-1.fna.fbcdn.net/v/t15.3394-10/456550195_7753042458138924_5526818192417165436_n.jpg?stp=dst-jpg_s843x403&_nc_cat=107&ccb=1-7&_nc_sid=569220&_nc_ohc=XPKx27RK8CsQ7kNvgFvlaOm&_nc_ht=instagram.fmel5-1.fna&oh=03_Q7cD1QEPa6K1FZViEK1C6J_Do3BbdA23YfFxmqnonacNtkyBBg&oe=66CFBB3E',
-        'https://instagram.fmel5-1.fna.fbcdn.net/v/t15.3394-10/456681420_8259289000805839_2505635880902865479_n.jpg?stp=dst-jpg_s403x403&_nc_cat=108&ccb=1-7&_nc_sid=569220&_nc_ohc=BCGM_kJpYpcQ7kNvgGSZfIR&_nc_ht=instagram.fmel5-1.fna&oh=03_Q7cD1QG2dN6UpYC7PxQXgBoYMgzEUEBvoCVk3PMUe8n54Bv8Lw&oe=66CF9BD1',
-        'https://instagram.fmel5-1.fna.fbcdn.net/v/t15.3394-10/456439841_8614311791912431_3342882589452863563_n.jpg?stp=dst-jpg_s843x403&_nc_cat=101&ccb=1-7&_nc_sid=569220&_nc_ohc=WX2Dcp9sRzwQ7kNvgHmczNF&_nc_ht=instagram.fmel5-1.fna&oh=03_Q7cD1QHuIq9-rXOI2Zca3-gHK_C01S58c-FS3VtEwTpkJrHLvQ&oe=66CFBB10',
-        'https://instagram.fmel5-1.fna.fbcdn.net/v/t15.3394-10/456071048_7887168654729213_6997331460790678943_n.jpg?stp=dst-jpg_s403x403&_nc_cat=109&ccb=1-7&_nc_sid=569220&_nc_ohc=sA4fT5CGaM0Q7kNvgFWI7Jc&_nc_ht=instagram.fmel5-1.fna&oh=03_Q7cD1QHrFrfh_LQ8ru_tJo89AL_B2hS1auQIenorIRPKOQRjCg&oe=66CFA2CF',
+        '',
         ];
 
         let currentIndex = 0;
@@ -116,8 +112,17 @@
         }
 
         function swipeLeft() {
-            if (currentIndex !== firstVideoIndex && videoHistory.length > 0) {
-                currentIndex = videoHistory.pop();
+            // Prevent swiping back to the first video
+            if (videoHistory.length > 0) {
+                let previousIndex = videoHistory.pop();
+                if (previousIndex === firstVideoIndex) {
+                    if (videoHistory.length > 0) {
+                        previousIndex = videoHistory.pop();
+                    } else {
+                        return; // If no other history, stop swiping
+                    }
+                }
+                currentIndex = previousIndex;
                 playVideo(currentIndex);
             }
         }
