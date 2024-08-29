@@ -80,33 +80,35 @@
 
         let currentIndex = 0;
         let videoHistory = [];
-        let futureVideos = [];
-        let lastTenVideos = [];
-        const maxHistorySize = 5;
-        const maxLastTenSize = 10;
-        const swipeThreshold = 0.2;
-        const firstVideoIndex = 0;
+        const maxHistorySize = 5; // Maximum number of recent videos to track
+        const swipeThreshold = 0.2; // Threshold for swipe detection (50% of screen width)
+        const firstVideoIndex = 0; // Index of the first video
+
+        let noRepeatLimit = 10; // Number of swipes before a video can repeat
 
         const videoPlayer = document.getElementById('videoPlayer');
         const redirectCircle = document.getElementById('redirectCircle');
-        let videoList = [...videoLinks];
-        let interacted = false;
+        let videoList = [...videoLinks]; // Clone videoLinks to manage video removal
+        let interacted = false; // To track if user has interacted
 
         function playVideo(index) {
             currentIndex = index;
             videoPlayer.src = videoList[index];
-            videoPlayer.controls = (index !== firstVideoIndex);
-            videoPlayer.muted = (index === firstVideoIndex) ? !interacted : false;
-            videoPlayer.loop = (index !== firstVideoIndex);
-            videoPlayer.play();
-            redirectCircle.style.display = (index === firstVideoIndex) ? 'block' : 'none';
+            videoPlayer.controls = (index !== firstVideoIndex); // Hide controls for the first video
 
-            // Update the lastTenVideos list
-            if (!lastTenVideos.includes(index)) {
-                lastTenVideos.push(index);
-                if (lastTenVideos.length > maxLastTenSize) {
-                    lastTenVideos.shift();
-                }
+            // Mute the first video and unmute others
+            videoPlayer.muted = (index === firstVideoIndex) ? !interacted : false;
+
+            // Loop all videos except the first one
+            videoPlayer.loop = (index !== firstVideoIndex);
+
+            videoPlayer.play();
+
+            // Show the redirect circle only for the first video
+            if (index === firstVideoIndex) {
+                redirectCircle.style.display = 'block';
+            } else {
+                redirectCircle.style.display = 'none';
             }
         }
 
@@ -131,7 +133,7 @@
             let randomIndex;
             const validIndexes = videoList
                 .map((_, index) => index)
-                .filter(index => !excludeIndexes.includes(index) && index !== firstVideoIndex); // Exclude first video and recent 10
+                .filter(index => !excludeIndexes.includes(index) && index !== firstVideoIndex); // Exclude the first video and recently played ones
 
             if (validIndexes.length === 0) {
                 return excludeIndexes[Math.floor(Math.random() * excludeIndexes.length)];
@@ -143,42 +145,63 @@
 
         function swipeLeft() {
             if (videoHistory.length > 0) {
-                const previousIndex = videoHistory.pop();
-                futureVideos.push(currentIndex); // Remember future videos
+                let previousIndex = videoHistory.pop();
+                if (previousIndex === firstVideoIndex) {
+                    if (videoHistory.length > 0) {
+                        previousIndex = videoHistory.pop();
+                    } else {
+                        return; // If no other history, stop swiping
+                    }
+                }
                 playVideoWithAnimation(previousIndex, 'right');
             }
         }
 
         function swipeRight() {
-            if (futureVideos.length > 0) {
-                const nextIndex = futureVideos.pop();
-                videoHistory.push(currentIndex); // Keep current video in history
-                playVideoWithAnimation(nextIndex, 'left');
-            } else {
-                videoHistory.push(currentIndex);
-                if (videoHistory.length > maxHistorySize) {
-                    videoHistory.shift(); // Keep history within limit
-                }
+            if (currentIndex === firstVideoIndex) return; // Prevent swiping on the first video
 
-                const newIndex = getRandomIndex([...videoHistory, ...lastTenVideos, currentIndex]);
-                playVideoWithAnimation(newIndex, 'left');
+            videoHistory.push(currentIndex);
+            if (videoHistory.length > maxHistorySize) {
+                videoHistory.shift(); // Keep the history size within the limit
             }
+            const recentVideos = videoHistory.slice(-noRepeatLimit); // Last N videos to avoid repeating
+            const newIndex = getRandomIndex(recentVideos);
+            playVideoWithAnimation(newIndex, 'left');
         }
 
         function playVideoWithAnimation(newIndex, direction) {
-            const oldVideoPlayer = videoPlayer.cloneNode();
-            oldVideoPlayer.src = videoPlayer.src;
+            const oldVideoPlayer = videoPlayer.cloneNode(); // Clone the current video player
+            oldVideoPlayer.src = videoPlayer.src; // Set the source to the current video
 
+            // Append the old video player to the container for the transition
             videoContainer.appendChild(oldVideoPlayer);
 
-            videoPlayer.style.transform = (direction === 'left') ? 'translateX(100%)' : 'translateX(-100%)';
-            playVideo(newIndex);
+            // Set up the initial positions for the swipe animation
+            if (direction === 'left') {
+                videoPlayer.style.transform = 'translateX(100%)';
+            } else if (direction === 'right') {
+                videoPlayer.style.transform = 'translateX(-100%)';
+            }
 
+            // Load the new video
+            videoPlayer.src = videoList[newIndex];
+            videoPlayer.controls = (newIndex !== firstVideoIndex);
+            videoPlayer.muted = (newIndex === firstVideoIndex) ? !interacted : false;
+            videoPlayer.loop = (newIndex !== firstVideoIndex);
+            videoPlayer.play();
+
+            // Trigger the animation by moving the videos
             setTimeout(() => {
-                oldVideoPlayer.style.transform = (direction === 'left') ? 'translateX(-100%)' : 'translateX(100%)';
-                videoPlayer.style.transform = 'translateX(0)';
-            }, 10);
+                if (direction === 'left') {
+                    oldVideoPlayer.style.transform = 'translateX(-100%)';
+                    videoPlayer.style.transform = 'translateX(0)';
+                } else if (direction === 'right') {
+                    oldVideoPlayer.style.transform = 'translateX(100%)';
+                    videoPlayer.style.transform = 'translateX(0)';
+                }
+            }, 10); // Delay to allow for DOM update before starting transition
 
+            // Remove the old video player after the transition ends
             oldVideoPlayer.addEventListener('transitionend', () => {
                 videoContainer.removeChild(oldVideoPlayer);
             });
@@ -191,19 +214,21 @@
         }
 
         function handleTouchMove(evt) {
-            if (!xDown) return;
+            if (!xDown) {
+                return;
+            }
 
-            const xUp = evt.touches[0].clientX;
-            const xDiff = xDown - xUp;
+            let xUp = evt.touches[0].clientX;
+            let xDiff = xDown - xUp;
 
             if (Math.abs(xDiff) > windowWidth * swipeThreshold) {
-                interacted = true;
+                interacted = true; // Set interacted to true on swipe
                 if (xDiff > 0) {
-                    swipeRight();
+                    swipeRight(); // Swipe right advances to a new random video
                 } else {
-                    swipeLeft();
+                    swipeLeft(); // Swipe left goes back to the previous video
                 }
-                xDown = null;
+                xDown = null; // Reset value
             }
         }
 
@@ -213,11 +238,13 @@
         document.addEventListener('touchstart', handleTouchStart, false);
         document.addEventListener('touchmove', handleTouchMove, false);
 
+        // Redirect to the second video when the circle is clicked
         redirectCircle.addEventListener('click', () => {
-            const randomIndex = getRandomIndex([currentIndex, firstVideoIndex]);
+            let randomIndex = getRandomIndex([currentIndex, firstVideoIndex]); // Exclude current and first video index
             playVideo(randomIndex);
         });
 
+        // Initial video play
         playVideo(currentIndex);
     </script>
 </body>
