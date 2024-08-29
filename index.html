@@ -265,7 +265,7 @@ function swipeRight() {
 }
 
 function animateVideoSwitch(newIndex, direction) {
-    const offset = direction === 'right' ? -windowWidth : windowWidth;
+    const offset = direction === 'right' ? windowWidth : -windowWidth;
 
     // Animate current video out
     videoContainer.style.transition = 'transform 0.3s ease';
@@ -277,7 +277,7 @@ function animateVideoSwitch(newIndex, direction) {
         videoContainer.style.transition = 'none';
         videoContainer.style.transform = `translateX(${-offset}px)`;
 
-        // Animate new video in
+        // Animate new video in from the opposite direction
         requestAnimationFrame(() => {
             videoContainer.style.transition = 'transform 0.3s ease';
             videoContainer.style.transform = 'translateX(0)';
@@ -289,8 +289,9 @@ function animateVideoSwitch(newIndex, direction) {
 document.addEventListener('touchend', handleTouchEnd, false);
 
 
-        document.addEventListener('touchstart', handleTouchStart, false);
-        document.addEventListener('touchmove', handleTouchMove, false);
+
+document.addEventListener('touchstart', handleTouchStart, false);
+document.addEventListener('touchmove', handleTouchMove, false);
 
         // Redirect to the second video when the circle is clicked
         redirectCircle.addEventListener('click', () => {
