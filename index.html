@@ -12,24 +12,20 @@
             background-color: #000;
         }
         #videoContainer {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    transition: transform 0.3s ease;
-}
-
-video {
-    max-width: 100%;
-    max-height: 100%;
-    width: auto;
-    height: auto;
-    transition: transform 0.3s ease;
-}
-
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        video {
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+        }
         #redirectCircle {
             position: absolute;
             width: 150px;
@@ -40,6 +36,38 @@ video {
             display: none;
             cursor: pointer;
         }
+
+        /* Initial hidden position for new videos */
+        .video-left-outside {
+            transform: translateX(-100%);
+        }
+
+        .video-right-outside {
+            transform: translateX(100%);
+        }
+
+        /* Animation for videos moving leftward */
+        .video-left-in {
+            transition: transform 0.5s ease;
+            transform: translateX(0);
+        }
+
+        .video-left-out {
+            transition: transform 0.5s ease;
+            transform: translateX(-100%);
+        }
+
+        /* Animation for videos moving rightward */
+        .video-right-in {
+            transition: transform 0.5s ease;
+            transform: translateX(0);
+        }
+
+        .video-right-out {
+            transition: transform 0.5s ease;
+            transform: translateX(100%);
+        }
+
     </style>
 </head>
 <body>
@@ -76,7 +104,7 @@ video {
         let currentIndex = 0;
         let videoHistory = [];
         const maxHistorySize = 5; // Maximum number of recent videos to track
-        const swipeThreshold = 0.5; // Threshold for swipe detection (50% of screen width)
+        const swipeThreshold = 0.2; // Threshold for swipe detection (50% of screen width)
         const firstVideoIndex = 0; // Index of the first video
 
         const videoPlayer = document.getElementById('videoPlayer');
@@ -85,25 +113,25 @@ video {
         let interacted = false; // To track if user has interacted
 
         function playVideo(index) {
-        currentIndex = index;
-        videoPlayer.src = videoList[index];
-        videoPlayer.controls = (index !== firstVideoIndex); // Hide controls for the first video
+            currentIndex = index;
+            videoPlayer.src = videoList[index];
+            videoPlayer.controls = (index !== firstVideoIndex); // Hide controls for the first video
 
-        // Mute the first video and unmute others
-        videoPlayer.muted = (index === firstVideoIndex) ? !interacted : false;
+            // Mute the first video and unmute others
+            videoPlayer.muted = (index === firstVideoIndex) ? !interacted : false;
 
-        // Loop all videos except the first one
-        videoPlayer.loop = (index !== firstVideoIndex);
+            // Loop all videos except the first one
+            videoPlayer.loop = (index !== firstVideoIndex);
 
-        videoPlayer.play();
+            videoPlayer.play();
 
-        // Show the redirect circle only for the first video
-        if (index === firstVideoIndex) {
-            redirectCircle.style.display = 'block';
-        } else {
-            redirectCircle.style.display = 'none';
+            // Show the redirect circle only for the first video
+            if (index === firstVideoIndex) {
+                redirectCircle.style.display = 'block';
+            } else {
+                redirectCircle.style.display = 'none';
+            }
         }
-    }
 
         function adjustVideoSize() {
             const container = document.getElementById('videoContainer');
@@ -136,8 +164,33 @@ video {
             return randomIndex;
         }
 
+        function playVideoWithAnimation(newIndex, direction) {
+            const oldVideoPlayer = videoPlayer.cloneNode(true); // Clone the current video element
+            videoContainer.appendChild(oldVideoPlayer); // Add the clone to the container
+
+            // Set the starting position for the new video
+            videoPlayer.className = (direction === 'left') ? 'video-right-outside' : 'video-left-outside';
+            playVideo(newIndex);
+
+            // Trigger reflow for the CSS transition
+            void videoPlayer.offsetWidth;
+
+            // Add classes to animate the videos
+            if (direction === 'left') {
+                oldVideoPlayer.classList.add('video-left-out');
+                videoPlayer.classList.add('video-left-in');
+            } else {
+                oldVideoPlayer.classList.add('video-right-out');
+                videoPlayer.classList.add('video-right-in');
+            }
+
+            // Remove the old video after the animation is done
+            oldVideoPlayer.addEventListener('transitionend', () => {
+                videoContainer.removeChild(oldVideoPlayer);
+            });
+        }
+
         function swipeLeft() {
-            // Prevent swiping back to the first video
             if (videoHistory.length > 0) {
                 let previousIndex = videoHistory.pop();
                 if (previousIndex === firstVideoIndex) {
@@ -148,7 +201,7 @@ video {
                     }
                 }
                 currentIndex = previousIndex;
-                playVideo(currentIndex);
+                playVideoWithAnimation(currentIndex, 'right');
             }
         }
 
@@ -163,12 +216,9 @@ video {
                 // No more videos to choose from
                 return;
             }
-            currentIndex = getRandomIndex(videoHistory);
-            if (currentIndex === firstVideoIndex) {
-                // Avoid selecting the first video again
-                currentIndex = getRandomIndex(videoHistory);
-            }
-            playVideo(currentIndex);
+            const nextIndex = getRandomIndex(videoHistory);
+            currentIndex = nextIndex;
+            playVideoWithAnimation(currentIndex, 'left');
         }
 
         function handleTouchStart(evt) {
@@ -197,108 +247,16 @@ video {
         }
 
         let xDown = null;
-let windowWidth = window.innerWidth;
-let xDiff = 0;
+        let windowWidth = window.innerWidth;
 
-function handleTouchStart(evt) {
-    const firstTouch = evt.touches[0];
-    xDown = firstTouch.clientX;
-}
-
-function handleTouchMove(evt) {
-    if (!xDown) {
-        return;
-    }
-
-    let xUp = evt.touches[0].clientX;
-    xDiff = xDown - xUp;
-
-    // Move the video container according to the swipe
-    videoContainer.style.transform = `translateX(${-xDiff}px)`;
-}
-
-function handleTouchEnd() {
-    if (Math.abs(xDiff) > windowWidth * swipeThreshold) {
-        interacted = true; // Set interacted to true on swipe
-        if (xDiff > 0) {
-            swipeRight(); // Swipe right advances to a new random video
-        } else {
-            swipeLeft(); // Swipe left goes back to the previous video
-        }
-    } else {
-        // Snap back to the original position if not swiped enough
-        videoContainer.style.transform = `translateX(0)`;
-    }
-
-    // Reset values
-    xDown = null;
-    xDiff = 0;
-}
-
-function swipeLeft() {
-    if (videoHistory.length > 0) {
-        let previousIndex = videoHistory.pop();
-        if (previousIndex === firstVideoIndex) {
-            if (videoHistory.length > 0) {
-                previousIndex = videoHistory.pop();
-            } else {
-                return; // If no other history, stop swiping
-            }
-        }
-        currentIndex = previousIndex;
-        animateVideoSwitch(currentIndex, 'left');
-    }
-}
-
-function swipeRight() {
-    if (currentIndex === firstVideoIndex) return; // Prevent swiping on the first video
-
-    videoHistory.push(currentIndex);
-    if (videoHistory.length > maxHistorySize) {
-        videoHistory.shift(); // Keep the history size within the limit
-    }
-    currentIndex = getRandomIndex(videoHistory);
-    if (currentIndex === firstVideoIndex) {
-        currentIndex = getRandomIndex(videoHistory);
-    }
-    animateVideoSwitch(currentIndex, 'right');
-}
-
-function animateVideoSwitch(newIndex, direction) {
-    const offset = direction === 'right' ? windowWidth : -windowWidth;
-
-    // Animate current video out
-    videoContainer.style.transition = 'transform 0.3s ease';
-    videoContainer.style.transform = `translateX(${offset}px)`;
-
-    // When the animation ends, switch the video and reset the position
-    setTimeout(() => {
-        playVideo(newIndex);
-        videoContainer.style.transition = 'none';
-        videoContainer.style.transform = `translateX(${-offset}px)`;
-
-        // Animate new video in from the opposite direction
-        requestAnimationFrame(() => {
-            videoContainer.style.transition = 'transform 0.3s ease';
-            videoContainer.style.transform = 'translateX(0)';
-        });
-    }, 300);
-}
-
-// Add touch end event to handle the end of a swipe
-document.addEventListener('touchend', handleTouchEnd, false);
-
-
-
-document.addEventListener('touchstart', handleTouchStart, false);
-document.addEventListener('touchmove', handleTouchMove, false);
+        document.addEventListener('touchstart', handleTouchStart, false);
+        document.addEventListener('touchmove', handleTouchMove, false);
 
         // Redirect to the second video when the circle is clicked
         redirectCircle.addEventListener('click', () => {
             let randomIndex = getRandomIndex([currentIndex, firstVideoIndex]); // Exclude current and first video index
             playVideo(randomIndex);
         });
-
 
         // Initial video play
         playVideo(currentIndex);
