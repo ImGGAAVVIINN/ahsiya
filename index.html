@@ -81,7 +81,9 @@
         let currentIndex = 0;
         let videoHistory = [];
         let futureVideos = [];
+        let lastTenVideos = [];
         const maxHistorySize = 5;
+        const maxLastTenSize = 10;
         const swipeThreshold = 0.2;
         const firstVideoIndex = 0;
 
@@ -98,6 +100,14 @@
             videoPlayer.loop = (index !== firstVideoIndex);
             videoPlayer.play();
             redirectCircle.style.display = (index === firstVideoIndex) ? 'block' : 'none';
+
+            // Update the lastTenVideos list
+            if (!lastTenVideos.includes(index)) {
+                lastTenVideos.push(index);
+                if (lastTenVideos.length > maxLastTenSize) {
+                    lastTenVideos.shift();
+                }
+            }
         }
 
         function adjustVideoSize() {
@@ -121,7 +131,7 @@
             let randomIndex;
             const validIndexes = videoList
                 .map((_, index) => index)
-                .filter(index => !excludeIndexes.includes(index) && index !== firstVideoIndex); // Exclude first video
+                .filter(index => !excludeIndexes.includes(index) && index !== firstVideoIndex); // Exclude first video and recent 10
 
             if (validIndexes.length === 0) {
                 return excludeIndexes[Math.floor(Math.random() * excludeIndexes.length)];
@@ -150,7 +160,7 @@
                     videoHistory.shift(); // Keep history within limit
                 }
 
-                const newIndex = getRandomIndex([...videoHistory, currentIndex]);
+                const newIndex = getRandomIndex([...videoHistory, ...lastTenVideos, currentIndex]);
                 playVideoWithAnimation(newIndex, 'left');
             }
         }
