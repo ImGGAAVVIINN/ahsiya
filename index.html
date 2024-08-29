@@ -59,6 +59,14 @@
         'https://link.storjsatelliteshare.io/s/jueji5zpq6mfl6ryrq6q2o3u6mya/aa1%2Flv_0_20240720225010.mp4?view=1',
         'https://link.storjsatelliteshare.io/s/jvyif4mzcqq725jh4fxt74zy6auq/aa1%2Flv_0_20240802225004.mp4?view=1',
         'https://link.storjsatelliteshare.io/s/jul3yknzr3nsyrspiuvwwaybtpja/aa1%2FRDT_20240525_192752.mp4?view=1',
+        'https://link.storjsatelliteshare.io/s/juz655sfzktalb3sah5chsgaydxq/aa2%2F456598408_7804285563026789_5944112310659083646_n.mp4?view=1',
+        'https://link.storjsatelliteshare.io/s/jxczmgy4lqwjwmrhsv67uig54jea/aa2%2F456711265_27216442997954795_7065164847423848830_n.mp4?view=1',
+        'https://link.storjsatelliteshare.io/s/jxzri75mdr3atqfkulfgbupl24zq/aa2%2F456713241_8928871023795866_5871626189483499291_n.mp4?view=1',
+        'https://link.storjsatelliteshare.io/s/jxijijxmiv4xl7saajoozy7etpoa/aa2%2F456909216_8057433167686309_1616290838543572092_n.mp4?view=1',
+        'https://link.storjsatelliteshare.io/s/jxlcn7u4bqagvvnkexxzwznc23kq/aa2%2F457141878_26511636631816530_2267311591772088734_n.mp4?view=1',
+        'https://link.storjsatelliteshare.io/s/jvztunzmq6hcymxpsfpwlnosu5dq/aa2%2F457175770_8057601631002324_1368104476340286838_n.mp4?view=1',
+        'https://link.storjsatelliteshare.io/s/jwry3s4kvnbvs5gfysbo5w34mscq/aa2%2F457228987_8482807861750390_2478128430927144203_n.mp4?view=1',
+        'https://link.storjsatelliteshare.io/s/jxxu5baolzniqwdiqp76a2pts7sa/aa2%2F457280370_7308339682602775_825640068035192075_n.mp4?view=1',
         ];
 
         let currentIndex = 0;
@@ -73,19 +81,25 @@
         let interacted = false; // To track if user has interacted
 
         function playVideo(index) {
-            currentIndex = index;
-            videoPlayer.src = videoList[index];
-            videoPlayer.controls = (index !== firstVideoIndex); // Hide controls for the first video
-            videoPlayer.muted = !interacted; // Mute initially if no user interaction
-            videoPlayer.play();
+        currentIndex = index;
+        videoPlayer.src = videoList[index];
+        videoPlayer.controls = (index !== firstVideoIndex); // Hide controls for the first video
 
-            // Show the redirect circle only for the first video
-            if (index === firstVideoIndex) {
-                redirectCircle.style.display = 'block';
-            } else {
-                redirectCircle.style.display = 'none';
-            }
+        // Mute the first video and unmute others
+        videoPlayer.muted = (index === firstVideoIndex) ? !interacted : false;
+
+        // Loop all videos except the first one
+        videoPlayer.loop = (index !== firstVideoIndex);
+
+        videoPlayer.play();
+
+        // Show the redirect circle only for the first video
+        if (index === firstVideoIndex) {
+            redirectCircle.style.display = 'block';
+        } else {
+            redirectCircle.style.display = 'none';
         }
+    }
 
         function adjustVideoSize() {
             const container = document.getElementById('videoContainer');
@@ -186,8 +200,10 @@
 
         // Redirect to the second video when the circle is clicked
         redirectCircle.addEventListener('click', () => {
-            playVideo(1); // Play the second video (index 1)
+            let randomIndex = getRandomIndex([currentIndex, firstVideoIndex]); // Exclude current and first video index
+            playVideo(randomIndex);
         });
+
 
         // Initial video play
         playVideo(currentIndex);
