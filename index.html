@@ -10,9 +10,15 @@
             margin: 0;
             overflow: hidden;
             background-color: #000;
-            font-family: 'Arial', sans-serif;
         }
-
+        #videoPlayer {
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            position: absolute;
+            transition: transform 0.3s ease; /* Smooth transition for swipe */
+        }
         #videoContainer {
             position: relative;
             width: 100%;
@@ -24,63 +30,12 @@
             background-color: #000;
         }
 
-        #videoPlayer {
+        video {
             max-width: 100%;
             max-height: 100%;
             width: auto;
             height: auto;
-            position: absolute;
-            transition: transform 0.3s ease;
-            border-radius: 8px;
         }
-
-        #playButton {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 80px;
-            height: 80px;
-            background-color: rgba(255, 255, 255, 0.7);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        #playButton svg {
-            width: 40px;
-            height: 40px;
-            fill: #000;
-        }
-
-        #videoPlayer.paused + #playButton {
-            opacity: 1;
-        }
-
-        #progressBarContainer {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 80%;
-            height: 8px;
-            bottom: 2.5%;
-            background-color: rgba(255, 255, 255, 0.2);
-            border-radius: 4px;
-            overflow: hidden;
-        }
-
-        #progressBar {
-            width: 0%;
-            height: 100%;
-            background-color: #ffffff;
-            transition: width 0.2s ease;
-        }
-
         #redirectCircle {
             position: absolute;
             width: 150px;
@@ -90,50 +45,15 @@
             transform: translate(-50%, -50%);
             display: none;
             cursor: pointer;
-            background: radial-gradient(circle, rgba(255,255,255,0.7), rgba(255,255,255,0.2));
-            background-image: url("https://static.vecteezy.com/system/resources/thumbnails/018/923/646/small/web-button-icons-png.png");
-            background-size: 100%;
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% { transform: translate(-50%, -50%) scale(1); }
-            50% { transform: translate(-50%, -50%) scale(1.1); }
-            100% { transform: translate(-50%, -50%) scale(1); }
-        }
-
-        @media (max-width: 768px) {
-            #playButton {
-                width: 60px;
-                height: 60px;
-            }
-
-            #playButton svg {
-                width: 30px;
-                height: 30px;
-            }
-
-            #progressBarContainer {
-                width: 90%;
-            }
         }
     </style>
 </head>
 <body>
 
-<div id="videoContainer">
-    <video id="videoPlayer" autoplay muted></video>
-    <div id="playButton">
-        <svg viewBox="0 0 24 24">
-            <polygon points="6,4 20,12 6,20"></polygon>
-        </svg>
+    <div id="videoContainer">
+        <video id="videoPlayer" autoplay muted></video>
+        <div id="redirectCircle"></div>
     </div>
-    <div id="progressBarContainer">
-        <div id="progressBar"></div>
-    </div>
-    <div id="redirectCircle"></div>
-</div>
     
     <script>
         const videoLinks = [
@@ -194,16 +114,7 @@
             } else {
                 redirectCircle.style.display = 'none';
             }
-
-                // Show or hide the redirectCircle based on the video index
-        if (index === firstVideoIndex) {
-            redirectCircle.style.display = 'block';
-            progressBarContainer.style.display = 'none'; // Hide progress bar
-        } else {
-            redirectCircle.style.display = 'none';
-            progressBarContainer.style.display = 'block'; // Show progress bar
         }
-            }
 
         function adjustVideoSize() {
             const videoPlayer = document.getElementById('videoPlayer');
@@ -332,32 +243,8 @@
             playVideo(randomIndex);
         });
 
-        //this part is added by gpt, might be incompatable
-        videoPlayer.addEventListener('pause', () => {
-            videoPlayer.classList.add('paused');
-        });
-
-        videoPlayer.addEventListener('play', () => {
-            videoPlayer.classList.remove('paused');
-        });
-
-        playButton.addEventListener('click', () => {
-            if (videoPlayer.paused) {
-                videoPlayer.play();
-            } else {
-                videoPlayer.pause();
-            }
-        });
-
-        videoPlayer.addEventListener('timeupdate', () => {
-            const progress = (videoPlayer.currentTime / videoPlayer.duration) * 100;
-            progressBar.style.width = `${progress}%`;
-        });
-
         // Initial video play
         playVideo(currentIndex);
-
-
     </script>
 </body>
 </html>
