@@ -117,16 +117,16 @@
         }
 
         function adjustVideoSize() {
-    const videoPlayer = document.getElementById('videoPlayer');
-    videoPlayer.style.width = '100%';
-    videoPlayer.style.height = '100%';
-}
+            const videoPlayer = document.getElementById('videoPlayer');
+            videoPlayer.style.width = '100%';
+            videoPlayer.style.height = '100%';
+        }
 
-// Ensure adjustVideoSize is called when the video metadata is loaded
-videoPlayer.addEventListener('loadedmetadata', adjustVideoSize);
+        // Ensure adjustVideoSize is called when the video metadata is loaded
+        videoPlayer.addEventListener('loadedmetadata', adjustVideoSize);
 
-// Optionally, call adjustVideoSize when the window is resized
-window.addEventListener('resize', adjustVideoSize);
+        // Optionally, call adjustVideoSize when the window is resized
+        window.addEventListener('resize', adjustVideoSize);
 
         function getRandomIndex(excludeIndexes) {
             let randomIndex;
