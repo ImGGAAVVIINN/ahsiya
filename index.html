@@ -78,7 +78,7 @@ video {
         let lastTenVideos = [];
         const maxHistorySize = 5;
         const maxLastTenSize = 10;
-        const swipeThreshold = 0.3;
+        const swipeThreshold = 0.2;
         const firstVideoIndex = 0;
 
         const videoPlayer = document.getElementById('videoPlayer');
@@ -105,23 +105,19 @@ video {
         }
 
         function adjustVideoSize() {
-    const videoAspectRatio = videoPlayer.videoWidth / videoPlayer.videoHeight;
-    const windowAspectRatio = window.innerWidth / window.innerHeight;
+            const videoAspectRatio = videoPlayer.videoWidth / videoPlayer.videoHeight;
+            const windowAspectRatio = window.innerWidth / window.innerHeight;
 
-    if (windowAspectRatio > videoAspectRatio) {
-        videoPlayer.style.width = '100vw';
-        videoPlayer.style.height = 'auto';
-    } else {
-        videoPlayer.style.width = 'auto';
-        videoPlayer.style.height = '100vh';
-    }
-}
+            if (windowAspectRatio > videoAspectRatio) {
+                videoPlayer.style.width = '100%';
+                videoPlayer.style.height = 'auto';
+            } else {
+                videoPlayer.style.width = 'auto';
+                videoPlayer.style.height = '100%';
+            }
+        }
 
-// Re-check after the video loads and after a small delay to ensure it’s adjusted
-videoPlayer.addEventListener('loadedmetadata', adjustVideoSize);
-setTimeout(adjustVideoSize, 100);
-window.addEventListener('resize', adjustVideoSize);
-
+        window.addEventListener('resize', adjustVideoSize); // Adjust video size on window resize
 
         function getRandomIndex(excludeIndexes) {
             let randomIndex;
