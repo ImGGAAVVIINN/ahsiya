@@ -158,30 +158,26 @@ video {
         function playVideoWithAnimation(newIndex, direction) {
     const oldVideoPlayer = videoPlayer.cloneNode();
     oldVideoPlayer.src = videoPlayer.src;
-    
-    // Ensure old video is positioned above the new video
-    oldVideoPlayer.style.zIndex = '1';
-    videoPlayer.style.zIndex = '2';
 
     videoContainer.appendChild(oldVideoPlayer);
 
-    // Set the initial position of the new video off-screen
     videoPlayer.style.transform = (direction === 'left') ? 'translateX(100%)' : 'translateX(-100%)';
     playVideo(newIndex);
 
-    // Animate the transition
     setTimeout(() => {
-        // Move the old video completely out of the viewport
         oldVideoPlayer.style.transform = (direction === 'left') ? 'translateX(-100%)' : 'translateX(100%)';
-        // Bring the new video into view
         videoPlayer.style.transform = 'translateX(0)';
     }, 10);
 
-    // Remove the old video after the transition ends
+    // Ensure the old video completely exits the screen before removing it
     oldVideoPlayer.addEventListener('transitionend', () => {
         videoContainer.removeChild(oldVideoPlayer);
     });
+
+    // Set the transition duration (increase if necessary for smoother exit)
+    oldVideoPlayer.style.transition = 'transform 0.5s ease';
 }
+
 
 
         function handleTouchStart(evt) {
