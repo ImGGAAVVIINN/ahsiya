@@ -156,23 +156,34 @@ video {
         }
 
         function playVideoWithAnimation(newIndex, direction) {
-            const oldVideoPlayer = videoPlayer.cloneNode();
-            oldVideoPlayer.src = videoPlayer.src;
+    const oldVideoPlayer = videoPlayer.cloneNode();
+    oldVideoPlayer.src = videoPlayer.src;
 
-            videoContainer.appendChild(oldVideoPlayer);
+    videoContainer.appendChild(oldVideoPlayer);
 
-            videoPlayer.style.transform = (direction === 'left') ? 'translateX(100%)' : 'translateX(-100%)';
-            playVideo(newIndex);
+    // Set the initial position for the old video
+    oldVideoPlayer.style.position = 'absolute';
+    oldVideoPlayer.style.top = 0;
+    oldVideoPlayer.style.left = 0;
+    oldVideoPlayer.style.width = '100%';
+    oldVideoPlayer.style.height = '100%';
 
-            setTimeout(() => {
-                oldVideoPlayer.style.transform = (direction === 'left') ? 'translateX(-100%)' : 'translateX(100%)';
-                videoPlayer.style.transform = 'translateX(0)';
-            }, 10);
+    // Set the transition for the new video coming in
+    videoPlayer.style.transform = (direction === 'left') ? 'translateX(100%)' : 'translateX(-100%)';
+    playVideo(newIndex);
 
-            oldVideoPlayer.addEventListener('transitionend', () => {
-                videoContainer.removeChild(oldVideoPlayer);
-            });
-        }
+    // Start the transition after a slight delay to ensure the new video is positioned correctly
+    setTimeout(() => {
+        oldVideoPlayer.style.transform = (direction === 'left') ? 'translateX(-100%)' : 'translateX(100%)';
+        videoPlayer.style.transform = 'translateX(0)';
+    }, 10);
+
+    // Remove the old video player once the transition ends
+    oldVideoPlayer.addEventListener('transitionend', () => {
+        videoContainer.removeChild(oldVideoPlayer);
+    });
+}
+
 
         function handleTouchStart(evt) {
             const firstTouch = evt.touches[0];
