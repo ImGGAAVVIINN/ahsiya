@@ -204,11 +204,11 @@ video {
 
             videoContainer.appendChild(oldVideoPlayer);
 
-            videoPlayer.style.transform = (direction === 'left') ? 'translateX(1000%)' : 'translateX(-1000%)';
+            videoPlayer.style.transform = (direction === 'left') ? 'translateX(9000%)' : 'translateX(-9000%)';
             playVideo(newIndex);
 
             setTimeout(() => {
-                oldVideoPlayer.style.transform = (direction === 'left') ? 'translateX(-1000%)' : 'translateX(1000%)';
+                oldVideoPlayer.style.transform = (direction === 'left') ? 'translateX(-9000%)' : 'translateX(9000%)';
                 videoPlayer.style.transform = 'translateX(0)';
             }, 10);
 
