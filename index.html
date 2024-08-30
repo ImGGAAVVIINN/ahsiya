@@ -199,27 +199,36 @@ video {
         }
 
         function playVideoWithAnimation(newIndex, direction) {
-            const oldVideoPlayer = videoPlayer.cloneNode();
-            oldVideoPlayer.src = videoPlayer.src;
+    const oldVideoPlayer = videoPlayer.cloneNode();
+    oldVideoPlayer.src = videoPlayer.src;
 
-            videoContainer.appendChild(oldVideoPlayer);
+    // Append the cloned video player to the container for the transition effect
+    videoContainer.appendChild(oldVideoPlayer);
 
-            videoPlayer.style.transform = (direction === 'left') ? 'translateX(9000%)' : 'translateX(-9000%)';
-            playVideo(newIndex);
+    // Set the initial position of the videos based on the swipe direction
+    videoPlayer.style.transform = (direction === 'left') ? 'translateX(100%)' : 'translateX(-100%)';
+    oldVideoPlayer.style.transform = 'translateX(0)';
 
-            setTimeout(() => {
-                oldVideoPlayer.style.transform = (direction === 'left') ? 'translateX(-9000%)' : 'translateX(9000%)';
-                videoPlayer.style.transform = 'translateX(0)';
-            }, 10);
+    // Start playing the new video
+    playVideo(newIndex);
 
-            // Ensure the old video completely exits the screen before removing it
-            oldVideoPlayer.addEventListener('transitionend', () => {
-                videoContainer.removeChild(oldVideoPlayer);
-            });
+    // Allow the browser to recognize the changes by setting a timeout
+    setTimeout(() => {
+        // Move old video out and new video in
+        oldVideoPlayer.style.transform = (direction === 'left') ? 'translateX(-100%)' : 'translateX(100%)';
+        videoPlayer.style.transform = 'translateX(0)';
+    }, 10);
 
-            // Set the transition duration (increase if necessary for smoother exit)
-            oldVideoPlayer.style.transition = 'transform 0.5s ease';
-        }
+    // Clean up the old video player after the transition
+    oldVideoPlayer.addEventListener('transitionend', () => {
+        videoContainer.removeChild(oldVideoPlayer);
+    });
+
+    // Set the transition duration for smooth animations
+    oldVideoPlayer.style.transition = 'transform 0.5s ease';
+    videoPlayer.style.transition = 'transform 0.5s ease';
+}
+
 
 
 
