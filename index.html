@@ -127,17 +127,41 @@ video {
         }
 
         function adjustVideoSize() {
-            const videoAspectRatio = videoPlayer.videoWidth / videoPlayer.videoHeight;
-            const windowAspectRatio = window.innerWidth / window.innerHeight;
+    const videoAspectRatio = videoPlayer.videoWidth / videoPlayer.videoHeight;
+    const windowAspectRatio = window.innerWidth / window.innerHeight;
 
-            if (windowAspectRatio > videoAspectRatio) {
-                videoPlayer.style.width = '100%';
-                videoPlayer.style.height = 'auto';
-            } else {
-                videoPlayer.style.width = 'auto';
-                videoPlayer.style.height = '100%';
-            }
-        }
+    if (windowAspectRatio > videoAspectRatio) {
+        videoPlayer.style.width = '100%';
+        videoPlayer.style.height = 'auto';
+    } else {
+        videoPlayer.style.width = 'auto';
+        videoPlayer.style.height = '100%';
+    }
+}
+
+// This keeps the redirectCircle and video centered and functional
+function centerRedirectCircle() {
+    const redirectCircle = document.getElementById('redirectCircle');
+    redirectCircle.style.top = '50%';
+    redirectCircle.style.left = '50%';
+    redirectCircle.style.transform = 'translate(-50%, -50%)';
+}
+
+window.addEventListener('resize', () => {
+    adjustVideoSize();
+    centerRedirectCircle(); // Center the redirectCircle
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    adjustVideoSize();
+    centerRedirectCircle(); // Ensure redirectCircle is centered on load
+});
+
+videoPlayer.addEventListener('loadeddata', () => {
+    adjustVideoSize();
+    centerRedirectCircle(); // Recenter after video data is loaded
+});
+
 
         window.addEventListener('resize', adjustVideoSize); // Adjust video size on window resize
 
@@ -180,27 +204,27 @@ video {
         }
 
         function playVideoWithAnimation(newIndex, direction) {
-    const oldVideoPlayer = videoPlayer.cloneNode();
-    oldVideoPlayer.src = videoPlayer.src;
+            const oldVideoPlayer = videoPlayer.cloneNode();
+            oldVideoPlayer.src = videoPlayer.src;
 
-    videoContainer.appendChild(oldVideoPlayer);
+            videoContainer.appendChild(oldVideoPlayer);
 
-    videoPlayer.style.transform = (direction === 'left') ? 'translateX(100%)' : 'translateX(-100%)';
-    playVideo(newIndex);
+            videoPlayer.style.transform = (direction === 'left') ? 'translateX(100%)' : 'translateX(-100%)';
+            playVideo(newIndex);
 
-    setTimeout(() => {
-        oldVideoPlayer.style.transform = (direction === 'left') ? 'translateX(-100%)' : 'translateX(100%)';
-        videoPlayer.style.transform = 'translateX(0)';
-    }, 10);
+            setTimeout(() => {
+                oldVideoPlayer.style.transform = (direction === 'left') ? 'translateX(-100%)' : 'translateX(100%)';
+                videoPlayer.style.transform = 'translateX(0)';
+            }, 10);
 
-    // Ensure the old video completely exits the screen before removing it
-    oldVideoPlayer.addEventListener('transitionend', () => {
-        videoContainer.removeChild(oldVideoPlayer);
-    });
+            // Ensure the old video completely exits the screen before removing it
+            oldVideoPlayer.addEventListener('transitionend', () => {
+                videoContainer.removeChild(oldVideoPlayer);
+            });
 
-    // Set the transition duration (increase if necessary for smoother exit)
-    oldVideoPlayer.style.transition = 'transform 0.5s ease';
-}
+            // Set the transition duration (increase if necessary for smoother exit)
+            oldVideoPlayer.style.transition = 'transform 0.5s ease';
+        }
 
 
 
