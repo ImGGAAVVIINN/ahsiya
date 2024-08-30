@@ -5,47 +5,39 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AHSIYA</title>
     <style>
-        body, html {
-            height: 100%;
-            margin: 0;
-            overflow: hidden;
-            background-color: #000;
-        }
-        #videoPlayer {
-            max-width: 100%;
-            max-height: 100%;
-            width: auto;
-            height: auto;
-            position: absolute;
-            transition: transform 0.3s ease; /* Smooth transition for swipe */
-        }
         #videoContainer {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-            background-color: #000;
-        }
+    position: fixed; /* Use fixed to cover the entire viewport */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #000;
+    overflow: hidden;
+}
 
-        video {
-            max-width: 100%;
-            max-height: 100%;
-            width: auto;
-            height: auto;
-        }
-        #redirectCircle {
-            position: absolute;
-            width: 150px;
-            height: 150px;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            display: none;
-            cursor: pointer;
-        }
+video {
+    position: absolute; /* Ensure video is absolutely positioned */
+    max-width: 100%; /* Video won't exceed container width */
+    max-height: 100%; /* Video won't exceed container height */
+    width: auto;
+    height: auto;
+}
+
+#redirectCircle {
+    position: absolute;
+    width: 150px;
+    height: 150px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: none;
+    cursor: pointer;
+    z-index: 10; /* Ensure it stays above the video */
+}
+
     </style>
 </head>
 <body>
@@ -57,9 +49,7 @@
     
     <script>
         const videoLinks = [
-        //ahsiya intro
         'https://link.storjsatelliteshare.io/s/jwx62xz6ogmk7slngywbl7teegfq/aa1%2Fahsiya-intro.mp4?view=1',
-        //aa1
         'https://link.storjsatelliteshare.io/s/jvljyy2eyfzgvjmkkjzddgi5cxba/aa1%2F3459215cf4440cab50322ac6a685325a.mp4?view=1',
         'https://link.storjsatelliteshare.io/s/jvq6jpz4xdlp4hqkukcwokrj5jka/aa1%2F46520cc4d47c81df1b27535fef2c0188.mp4?view=1',
         'https://link.storjsatelliteshare.io/s/jws4vgbqlrnnryclow3wbuiq7h6a/aa1%2F5baf2b70b18ef7c3d0e4d11bacd7c344.mp4?view=1',
@@ -69,7 +59,6 @@
         'https://link.storjsatelliteshare.io/s/jueji5zpq6mfl6ryrq6q2o3u6mya/aa1%2Flv_0_20240720225010.mp4?view=1',
         'https://link.storjsatelliteshare.io/s/jvyif4mzcqq725jh4fxt74zy6auq/aa1%2Flv_0_20240802225004.mp4?view=1',
         'https://link.storjsatelliteshare.io/s/jul3yknzr3nsyrspiuvwwaybtpja/aa1%2FRDT_20240525_192752.mp4?view=1',
-        //aa2
         'https://link.storjsatelliteshare.io/s/juz655sfzktalb3sah5chsgaydxq/aa2%2F456598408_7804285563026789_5944112310659083646_n.mp4?view=1',
         'https://link.storjsatelliteshare.io/s/jxczmgy4lqwjwmrhsv67uig54jea/aa2%2F456711265_27216442997954795_7065164847423848830_n.mp4?view=1',
         'https://link.storjsatelliteshare.io/s/jxzri75mdr3atqfkulfgbupl24zq/aa2%2F456713241_8928871023795866_5871626189483499291_n.mp4?view=1',
@@ -78,61 +67,61 @@
         'https://link.storjsatelliteshare.io/s/jvztunzmq6hcymxpsfpwlnosu5dq/aa2%2F457175770_8057601631002324_1368104476340286838_n.mp4?view=1',
         'https://link.storjsatelliteshare.io/s/jwry3s4kvnbvs5gfysbo5w34mscq/aa2%2F457228987_8482807861750390_2478128430927144203_n.mp4?view=1',
         'https://link.storjsatelliteshare.io/s/jxxu5baolzniqwdiqp76a2pts7sa/aa2%2F457280370_7308339682602775_825640068035192075_n.mp4?view=1',
-        //aa3
-        '',
+
         ];
 
         let currentIndex = 0;
         let videoHistory = [];
-        const maxHistorySize = 5; // Maximum number of recent videos to track
-        const swipeThreshold = 0.2; // Threshold for swipe detection (50% of screen width)
-        const firstVideoIndex = 0; // Index of the first video
-
-        let noRepeatLimit = 10; // Number of swipes before a video can repeat
+        let futureVideos = [];
+        let lastTenVideos = [];
+        const maxHistorySize = 5;
+        const maxLastTenSize = 10;
+        const swipeThreshold = 0.2;
+        const firstVideoIndex = 0;
 
         const videoPlayer = document.getElementById('videoPlayer');
         const redirectCircle = document.getElementById('redirectCircle');
-        let videoList = [...videoLinks]; // Clone videoLinks to manage video removal
-        let interacted = false; // To track if user has interacted
+        let videoList = [...videoLinks];
+        let interacted = false;
 
         function playVideo(index) {
             currentIndex = index;
             videoPlayer.src = videoList[index];
-            videoPlayer.controls = (index !== firstVideoIndex); // Hide controls for the first video
-
-            // Mute the first video and unmute others
+            videoPlayer.controls = (index !== firstVideoIndex);
             videoPlayer.muted = (index === firstVideoIndex) ? !interacted : false;
-
-            // Loop all videos except the first one
             videoPlayer.loop = (index !== firstVideoIndex);
-
             videoPlayer.play();
+            redirectCircle.style.display = (index === firstVideoIndex) ? 'block' : 'none';
 
-            // Show the redirect circle only for the first video
-            if (index === firstVideoIndex) {
-                redirectCircle.style.display = 'block';
-            } else {
-                redirectCircle.style.display = 'none';
+            // Update the lastTenVideos list
+            if (!lastTenVideos.includes(index)) {
+                lastTenVideos.push(index);
+                if (lastTenVideos.length > maxLastTenSize) {
+                    lastTenVideos.shift();
+                }
             }
         }
 
         function adjustVideoSize() {
-            const videoPlayer = document.getElementById('videoPlayer');
-            videoPlayer.style.width = '100%';
-            videoPlayer.style.height = '100%';
+            const videoAspectRatio = videoPlayer.videoWidth / videoPlayer.videoHeight;
+            const windowAspectRatio = window.innerWidth / window.innerHeight;
+
+            if (windowAspectRatio > videoAspectRatio) {
+                videoPlayer.style.width = '100%';
+                videoPlayer.style.height = 'auto';
+            } else {
+                videoPlayer.style.width = 'auto';
+                videoPlayer.style.height = '100%';
+            }
         }
 
-        // Ensure adjustVideoSize is called when the video metadata is loaded
-        videoPlayer.addEventListener('loadedmetadata', adjustVideoSize);
-
-        // Optionally, call adjustVideoSize when the window is resized
-        window.addEventListener('resize', adjustVideoSize);
+        window.addEventListener('resize', adjustVideoSize); // Adjust video size on window resize
 
         function getRandomIndex(excludeIndexes) {
             let randomIndex;
             const validIndexes = videoList
                 .map((_, index) => index)
-                .filter(index => !excludeIndexes.includes(index) && index !== firstVideoIndex); // Exclude the first video and recently played ones
+                .filter(index => !excludeIndexes.includes(index) && index !== firstVideoIndex); // Exclude first video and recent 10
 
             if (validIndexes.length === 0) {
                 return excludeIndexes[Math.floor(Math.random() * excludeIndexes.length)];
@@ -144,63 +133,42 @@
 
         function swipeLeft() {
             if (videoHistory.length > 0) {
-                let previousIndex = videoHistory.pop();
-                if (previousIndex === firstVideoIndex) {
-                    if (videoHistory.length > 0) {
-                        previousIndex = videoHistory.pop();
-                    } else {
-                        return; // If no other history, stop swiping
-                    }
-                }
+                const previousIndex = videoHistory.pop();
+                futureVideos.push(currentIndex); // Remember future videos
                 playVideoWithAnimation(previousIndex, 'right');
             }
         }
 
         function swipeRight() {
-            if (currentIndex === firstVideoIndex) return; // Prevent swiping on the first video
+            if (futureVideos.length > 0) {
+                const nextIndex = futureVideos.pop();
+                videoHistory.push(currentIndex); // Keep current video in history
+                playVideoWithAnimation(nextIndex, 'left');
+            } else {
+                videoHistory.push(currentIndex);
+                if (videoHistory.length > maxHistorySize) {
+                    videoHistory.shift(); // Keep history within limit
+                }
 
-            videoHistory.push(currentIndex);
-            if (videoHistory.length > maxHistorySize) {
-                videoHistory.shift(); // Keep the history size within the limit
+                const newIndex = getRandomIndex([...videoHistory, ...lastTenVideos, currentIndex]);
+                playVideoWithAnimation(newIndex, 'left');
             }
-            const recentVideos = videoHistory.slice(-noRepeatLimit); // Last N videos to avoid repeating
-            const newIndex = getRandomIndex(recentVideos);
-            playVideoWithAnimation(newIndex, 'left');
         }
 
         function playVideoWithAnimation(newIndex, direction) {
-            const oldVideoPlayer = videoPlayer.cloneNode(); // Clone the current video player
-            oldVideoPlayer.src = videoPlayer.src; // Set the source to the current video
+            const oldVideoPlayer = videoPlayer.cloneNode();
+            oldVideoPlayer.src = videoPlayer.src;
 
-            // Append the old video player to the container for the transition
             videoContainer.appendChild(oldVideoPlayer);
 
-            // Set up the initial positions for the swipe animation
-            if (direction === 'left') {
-                videoPlayer.style.transform = 'translateX(100%)';
-            } else if (direction === 'right') {
-                videoPlayer.style.transform = 'translateX(-100%)';
-            }
+            videoPlayer.style.transform = (direction === 'left') ? 'translateX(100%)' : 'translateX(-100%)';
+            playVideo(newIndex);
 
-            // Load the new video
-            videoPlayer.src = videoList[newIndex];
-            videoPlayer.controls = (newIndex !== firstVideoIndex);
-            videoPlayer.muted = (newIndex === firstVideoIndex) ? !interacted : false;
-            videoPlayer.loop = (newIndex !== firstVideoIndex);
-            videoPlayer.play();
-
-            // Trigger the animation by moving the videos
             setTimeout(() => {
-                if (direction === 'left') {
-                    oldVideoPlayer.style.transform = 'translateX(-100%)';
-                    videoPlayer.style.transform = 'translateX(0)';
-                } else if (direction === 'right') {
-                    oldVideoPlayer.style.transform = 'translateX(100%)';
-                    videoPlayer.style.transform = 'translateX(0)';
-                }
-            }, 10); // Delay to allow for DOM update before starting transition
+                oldVideoPlayer.style.transform = (direction === 'left') ? 'translateX(-100%)' : 'translateX(100%)';
+                videoPlayer.style.transform = 'translateX(0)';
+            }, 10);
 
-            // Remove the old video player after the transition ends
             oldVideoPlayer.addEventListener('transitionend', () => {
                 videoContainer.removeChild(oldVideoPlayer);
             });
@@ -213,21 +181,19 @@
         }
 
         function handleTouchMove(evt) {
-            if (!xDown) {
-                return;
-            }
+            if (!xDown) return;
 
-            let xUp = evt.touches[0].clientX;
-            let xDiff = xDown - xUp;
+            const xUp = evt.touches[0].clientX;
+            const xDiff = xDown - xUp;
 
             if (Math.abs(xDiff) > windowWidth * swipeThreshold) {
-                interacted = true; // Set interacted to true on swipe
+                interacted = true;
                 if (xDiff > 0) {
-                    swipeRight(); // Swipe right advances to a new random video
+                    swipeRight();
                 } else {
-                    swipeLeft(); // Swipe left goes back to the previous video
+                    swipeLeft();
                 }
-                xDown = null; // Reset value
+                xDown = null;
             }
         }
 
@@ -237,13 +203,11 @@
         document.addEventListener('touchstart', handleTouchStart, false);
         document.addEventListener('touchmove', handleTouchMove, false);
 
-        // Redirect to the second video when the circle is clicked
         redirectCircle.addEventListener('click', () => {
-            let randomIndex = getRandomIndex([currentIndex, firstVideoIndex]); // Exclude current and first video index
+            const randomIndex = getRandomIndex([currentIndex, firstVideoIndex]);
             playVideo(randomIndex);
         });
 
-        // Initial video play
         playVideo(currentIndex);
     </script>
 </body>
