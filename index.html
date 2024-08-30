@@ -6,7 +6,7 @@
     <title>AHSIYA</title>
     <style>
         #videoContainer {
-    position: fixed; /* Use fixed to cover the entire viewport */
+    position: fixed;
     top: 0;
     left: 0;
     width: 100%;
@@ -19,11 +19,11 @@
 }
 
 video {
-    position: absolute; /* Ensure video is absolutely positioned */
-    max-width: 100%; /* Video won't exceed container width */
-    max-height: 100%; /* Video won't exceed container height */
+    max-width: 100%;
+    max-height: 100%;
     width: auto;
     height: auto;
+    object-fit: contain; /* Ensure video maintains aspect ratio and stays within the container */
 }
 
 #redirectCircle {
@@ -35,8 +35,9 @@ video {
     transform: translate(-50%, -50%);
     display: none;
     cursor: pointer;
-    z-index: 10; /* Ensure it stays above the video */
+    z-index: 10;
 }
+
 
     </style>
 </head>
