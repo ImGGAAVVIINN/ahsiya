@@ -66,7 +66,8 @@ video {
         function playVideo(index) {
             currentIndex = index;
             videoPlayer.src = videoList[index];
-            videoPlayer.controls = (index !== firstVideoIndex);
+            videoPlayer.controls = false; // Disable default controls
+            videoPlayer.setAttribute('controls', ''); // Ensure controls are not visible
             videoPlayer.muted = (index === firstVideoIndex) ? !interacted : false;
             videoPlayer.loop = (index !== firstVideoIndex);
             videoPlayer.play();
