@@ -115,52 +115,47 @@ video {
             videoPlayer.muted = (index === firstVideoIndex) ? !interacted : false;
             videoPlayer.loop = (index !== firstVideoIndex);
             videoPlayer.play();
+            
+            // Display the redirectCircle only for the first video
             redirectCircle.style.display = (index === firstVideoIndex) ? 'block' : 'none';
-
-            // Update the lastTenVideos list
-            if (!lastTenVideos.includes(index)) {
-                lastTenVideos.push(index);
-                if (lastTenVideos.length > maxLastTenSize) {
-                    lastTenVideos.shift();
-                }
-            }
+            centerRedirectCircle(); // Ensure the circle stays centered
         }
 
         function adjustVideoSize() {
-    const videoAspectRatio = videoPlayer.videoWidth / videoPlayer.videoHeight;
-    const windowAspectRatio = window.innerWidth / window.innerHeight;
+            const videoAspectRatio = videoPlayer.videoWidth / videoPlayer.videoHeight;
+            const windowAspectRatio = window.innerWidth / window.innerHeight;
 
-    if (windowAspectRatio > videoAspectRatio) {
-        videoPlayer.style.width = '100%';
-        videoPlayer.style.height = 'auto';
-    } else {
-        videoPlayer.style.width = 'auto';
-        videoPlayer.style.height = '100%';
-    }
-}
+            if (windowAspectRatio > videoAspectRatio) {
+                videoPlayer.style.width = '100%';
+                videoPlayer.style.height = 'auto';
+            } else {
+                videoPlayer.style.width = 'auto';
+                videoPlayer.style.height = '100%';
+            }
+        }
 
-// This keeps the redirectCircle and video centered and functional
-function centerRedirectCircle() {
-    const redirectCircle = document.getElementById('redirectCircle');
-    redirectCircle.style.top = '50%';
-    redirectCircle.style.left = '50%';
-    redirectCircle.style.transform = 'translate(-50%, -50%)';
-}
+        // This keeps the redirectCircle and video centered and functional
+        function centerRedirectCircle() {
+            const redirectCircle = document.getElementById('redirectCircle');
+            redirectCircle.style.top = '50%';
+            redirectCircle.style.left = '50%';
+            redirectCircle.style.transform = 'translate(-50%, -50%)';
+        }
 
-window.addEventListener('resize', () => {
-    adjustVideoSize();
-    centerRedirectCircle(); // Center the redirectCircle
-});
+        window.addEventListener('resize', () => {
+            adjustVideoSize();
+            centerRedirectCircle(); // Center the redirectCircle
+        });
 
-document.addEventListener('DOMContentLoaded', () => {
-    adjustVideoSize();
-    centerRedirectCircle(); // Ensure redirectCircle is centered on load
-});
+        document.addEventListener('DOMContentLoaded', () => {
+            adjustVideoSize();
+            centerRedirectCircle(); // Ensure redirectCircle is centered on load
+        });
 
-videoPlayer.addEventListener('loadeddata', () => {
-    adjustVideoSize();
-    centerRedirectCircle(); // Recenter after video data is loaded
-});
+        videoPlayer.addEventListener('loadeddata', () => {
+            adjustVideoSize();
+            centerRedirectCircle(); // Recenter after video data is loaded
+        });
 
 
         window.addEventListener('resize', adjustVideoSize); // Adjust video size on window resize
