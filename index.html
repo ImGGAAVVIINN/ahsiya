@@ -49,9 +49,192 @@ video {
     </div>
     
     <script>
-        const videoLinks = [
-            //intro
-            'https://link.storjshare.io/s/jvjd3ugvdzm7nldzvwhsgvhjbyva/aa1/ahsiya-intro.mp4?wrap=0',
+        let currentIndex = 0;
+let videoHistory = [];
+let futureVideos = [];
+let lastTenVideos = [];
+const maxHistorySize = 20;
+const maxVidsBeforeRepeat = 25;
+const swipeThreshold = 0.2;
+const firstVideoIndex = 0;
+
+const videoPlayer = document.getElementById('videoPlayer');
+const redirectCircle = document.getElementById('redirectCircle');
+let videoList;
+let interacted = false;
+
+function playVideo(index) {
+    currentIndex = index;
+    videoPlayer.src = videoList[index];
+    videoPlayer.controls = (index !== firstVideoIndex);
+    videoPlayer.muted = (index === firstVideoIndex) ? !interacted : false;
+    videoPlayer.loop = (index !== firstVideoIndex);
+    videoPlayer.play();
+
+    // Display the redirectCircle only for the first video
+    redirectCircle.style.display = (index === firstVideoIndex) ? 'block' : 'none';
+    centerRedirectCircle(); // Ensure the circle stays centered
+}
+
+function adjustVideoSize() {
+    const videoAspectRatio = videoPlayer.videoWidth / videoPlayer.videoHeight;
+    const windowAspectRatio = window.innerWidth / window.innerHeight;
+
+    if (windowAspectRatio > videoAspectRatio) {
+        videoPlayer.style.width = '100%';
+        videoPlayer.style.height = 'auto';
+    } else {
+        videoPlayer.style.width = 'auto';
+        videoPlayer.style.height = '100%';
+    }
+}
+
+function centerRedirectCircle() {
+    redirectCircle.style.top = '50%';
+    redirectCircle.style.left = '50%';
+    redirectCircle.style.transform = 'translate(-50%, -50%)';
+}
+
+function removeFullscreenButton() {
+    const controls = videoPlayer.controlsList;
+    if (controls) {
+        controls.remove('fullscreen');
+    }
+}
+
+function getRandomIndex(excludeIndexes) {
+    const validIndexes = videoList
+        .map((_, index) => index)
+        .filter(index => !excludeIndexes.includes(index) && index !== firstVideoIndex);
+
+    if (validIndexes.length === 0) {
+        return excludeIndexes[Math.floor(Math.random() * excludeIndexes.length)];
+    }
+
+    return validIndexes[Math.floor(Math.random() * validIndexes.length)];
+}
+
+function swipeLeft() {
+    if (currentIndex === firstVideoIndex) return;
+
+    if (videoHistory.length > 0) {
+        const previousIndex = videoHistory.pop();
+        futureVideos.push(currentIndex); // Remember future videos
+        playVideoWithAnimation(previousIndex, 'right');
+    }
+}
+
+function swipeRight() {
+    if (currentIndex === firstVideoIndex) return;
+
+    if (futureVideos.length > 0) {
+        const nextIndex = futureVideos.pop();
+        videoHistory.push(currentIndex); // Keep current video in history
+        playVideoWithAnimation(nextIndex, 'left');
+    } else {
+        videoHistory.push(currentIndex);
+        if (videoHistory.length > maxHistorySize) {
+            videoHistory.shift(); // Keep history within limit
+        }
+
+        const newIndex = getRandomIndex([...videoHistory, ...lastTenVideos, currentIndex]);
+        playVideoWithAnimation(newIndex, 'left');
+    }
+}
+
+function playVideoWithAnimation(newIndex, direction) {
+    const oldVideoPlayer = videoPlayer.cloneNode();
+    oldVideoPlayer.src = videoPlayer.src;
+    oldVideoPlayer.style.position = 'absolute';
+    oldVideoPlayer.style.top = 0;
+    oldVideoPlayer.style.left = 0;
+    oldVideoPlayer.style.width = '100%';
+    oldVideoPlayer.style.height = '100%';
+
+    // Append the cloned video player to the container for the transition effect
+    videoContainer.appendChild(oldVideoPlayer);
+
+    // Set the initial position of the new video player based on the swipe direction
+    videoPlayer.style.transition = 'none';
+    videoPlayer.style.transform = (direction === 'left') ? 'translateX(100%)' : 'translateX(-100%)';
+
+    // Trigger reflow to reset the CSS transition
+    videoPlayer.offsetHeight; // This line forces the browser to recognize the change
+
+    // Start playing the new video
+    playVideo(newIndex);
+
+    // Set the transition properties
+    oldVideoPlayer.style.transition = 'transform 0.7s ease';
+    videoPlayer.style.transition = 'transform 0.7s ease';
+
+    // Allow the browser to recognize the changes by setting a timeout
+    setTimeout(() => {
+        // Move old video out and new video in
+        oldVideoPlayer.style.transform = (direction === 'left') ? 'translateX(-200%)' : 'translateX(200%)';
+        videoPlayer.style.transform = 'translateX(0)';
+    }, 10);
+
+    // Clean up the old video player after the transition
+    oldVideoPlayer.addEventListener('transitionend', () => {
+        videoContainer.removeChild(oldVideoPlayer);
+    });
+}
+
+function handleTouchStart(evt) {
+    const firstTouch = evt.touches[0];
+    xDown = firstTouch.clientX;
+    windowWidth = window.innerWidth;
+}
+
+function handleTouchMove(evt) {
+    if (!xDown) return;
+
+    const xUp = evt.touches[0].clientX;
+    const xDiff = xDown - xUp;
+
+    if (Math.abs(xDiff) > windowWidth * swipeThreshold) {
+        interacted = true;
+        if (xDiff > 0) {
+            swipeRight();
+        } else {
+            swipeLeft();
+        }
+        xDown = null;
+    }
+}
+
+let xDown = null;
+let windowWidth = window.innerWidth;
+
+document.addEventListener('touchstart', handleTouchStart, false);
+document.addEventListener('touchmove', handleTouchMove, false);
+
+window.addEventListener('resize', () => {
+    adjustVideoSize();
+    centerRedirectCircle(); // Center the redirectCircle
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    adjustVideoSize();
+    centerRedirectCircle(); // Ensure redirectCircle is centered on load
+    removeFullscreenButton(); // Remove fullscreen button
+});
+
+videoPlayer.addEventListener('loadeddata', () => {
+    adjustVideoSize();
+    centerRedirectCircle(); // Recenter after video data is loaded
+});
+
+redirectCircle.addEventListener('click', () => {
+    const randomIndex = getRandomIndex([currentIndex, firstVideoIndex]);
+    playVideo(randomIndex);
+});
+
+// Move the videoLinks array to the bottom
+const videoLinks = [
+    //intro
+    'https://link.storjshare.io/s/jvjd3ugvdzm7nldzvwhsgvhjbyva/aa1/ahsiya-intro.mp4?wrap=0',
             //aa1 From Discord
             'https://link.storjshare.io/s/juox5f4q252pnezqf6ydjltnhixq/aa1/3459215cf4440cab50322ac6a685325a.mp4?wrap=0',
             'https://link.storjshare.io/s/jw346xr5ifgkug4abrr4janztq3a/aa1/46520cc4d47c81df1b27535fef2c0188.mp4?wrap=0',
@@ -149,198 +332,14 @@ video {
             'https://archive.org/download/456598415-8157139174401669-4353467094474906681-n/457031678_8035086303211430_1494287898827910488_n.mp4',
             'https://archive.org/download/456598415-8157139174401669-4353467094474906681-n/457057188_8261568147222864_3461963119162757462_n.mp4',
             'https://archive.org/download/456598415-8157139174401669-4353467094474906681-n/457058187_8147550431988568_5879585199774673606_n.mp4',
-        ];
 
-        let currentIndex = 0;
-        let videoHistory = [];
-        let futureVideos = [];
-        let lastTenVideos = [];
-        const maxHistorySize = 20;
-        const maxVidsBeforeRepeat = 25;
-        const swipeThreshold = 0.2;
-        const firstVideoIndex = 0;
+];
 
-        const videoPlayer = document.getElementById('videoPlayer');
-        const redirectCircle = document.getElementById('redirectCircle');
-        let videoList = [...videoLinks];
-        let interacted = false;
+// Initialize videoList after videoLinks is defined
+videoList = [...videoLinks];
 
-        function playVideo(index) {
-            currentIndex = index;
-            videoPlayer.src = videoList[index];
-            videoPlayer.controls = (index !== firstVideoIndex);
-            videoPlayer.muted = (index === firstVideoIndex) ? !interacted : false;
-            videoPlayer.loop = (index !== firstVideoIndex);
-            videoPlayer.play();
-            
-            // Display the redirectCircle only for the first video
-            redirectCircle.style.display = (index === firstVideoIndex) ? 'block' : 'none';
-            centerRedirectCircle(); // Ensure the circle stays centered
-        }
+playVideo(currentIndex);
 
-        function adjustVideoSize() {
-            const videoAspectRatio = videoPlayer.videoWidth / videoPlayer.videoHeight;
-            const windowAspectRatio = window.innerWidth / window.innerHeight;
-
-            if (windowAspectRatio > videoAspectRatio) {
-                videoPlayer.style.width = '100%';
-                videoPlayer.style.height = 'auto';
-            } else {
-                videoPlayer.style.width = 'auto';
-                videoPlayer.style.height = '100%';
-            }
-        }
-
-        // This keeps the redirectCircle and video centered and functional
-        function centerRedirectCircle() {
-            const redirectCircle = document.getElementById('redirectCircle');
-            redirectCircle.style.top = '50%';
-            redirectCircle.style.left = '50%';
-            redirectCircle.style.transform = 'translate(-50%, -50%)';
-        }
-
-        window.addEventListener('resize', () => {
-            adjustVideoSize();
-            centerRedirectCircle(); // Center the redirectCircle
-        });
-
-        document.addEventListener('DOMContentLoaded', () => {
-            adjustVideoSize();
-            centerRedirectCircle(); // Ensure redirectCircle is centered on load
-        });
-
-        videoPlayer.addEventListener('loadeddata', () => {
-            adjustVideoSize();
-            centerRedirectCircle(); // Recenter after video data is loaded
-        });
-
-
-        window.addEventListener('resize', adjustVideoSize); // Adjust video size on window resize
-
-        function getRandomIndex(excludeIndexes) {
-            let randomIndex;
-            const validIndexes = videoList
-                .map((_, index) => index)
-                .filter(index => !excludeIndexes.includes(index) && index !== firstVideoIndex); // Exclude first video and recent 10
-
-            if (validIndexes.length === 0) {
-                return excludeIndexes[Math.floor(Math.random() * excludeIndexes.length)];
-            }
-
-            randomIndex = validIndexes[Math.floor(Math.random() * validIndexes.length)];
-            return randomIndex;
-        }
-
-        function swipeLeft() {
-            if (currentIndex === firstVideoIndex) {
-                // If the current video is the first video, do not allow swiping
-                return;
-            }
-
-            if (videoHistory.length > 0) {
-                const previousIndex = videoHistory.pop();
-                futureVideos.push(currentIndex); // Remember future videos
-                playVideoWithAnimation(previousIndex, 'right');
-            }
-        }
-
-        function swipeRight() {
-            if (currentIndex === firstVideoIndex) {
-                // If the current video is the first video, do not allow swiping
-                return;
-            }
-
-            if (futureVideos.length > 0) {
-                const nextIndex = futureVideos.pop();
-                videoHistory.push(currentIndex); // Keep current video in history
-                playVideoWithAnimation(nextIndex, 'left');
-            } else {
-                videoHistory.push(currentIndex);
-                if (videoHistory.length > maxHistorySize) {
-                    videoHistory.shift(); // Keep history within limit
-                }
-
-                const newIndex = getRandomIndex([...videoHistory, ...lastTenVideos, currentIndex]);
-                playVideoWithAnimation(newIndex, 'left');
-            }
-        }
-
-
-        function playVideoWithAnimation(newIndex, direction) {
-    const oldVideoPlayer = videoPlayer.cloneNode();
-    oldVideoPlayer.src = videoPlayer.src;
-    oldVideoPlayer.style.position = 'absolute';
-    oldVideoPlayer.style.top = 0;
-    oldVideoPlayer.style.left = 0;
-    oldVideoPlayer.style.width = '100%';
-    oldVideoPlayer.style.height = '100%';
-
-    // Append the cloned video player to the container for the transition effect
-    videoContainer.appendChild(oldVideoPlayer);
-
-    // Set the initial position of the new video player based on the swipe direction
-    videoPlayer.style.transition = 'none';
-    videoPlayer.style.transform = (direction === 'left') ? 'translateX(100%)' : 'translateX(-100%)';
-
-    // Trigger reflow to reset the CSS transition
-    videoPlayer.offsetHeight; // This line forces the browser to recognize the change
-
-    // Start playing the new video
-    playVideo(newIndex);
-
-    // Set the transition properties
-    oldVideoPlayer.style.transition = 'transform 0.7s ease';
-    videoPlayer.style.transition = 'transform 0.7s ease';
-
-    // Allow the browser to recognize the changes by setting a timeout
-    setTimeout(() => {
-        // Move old video out and new video in
-        oldVideoPlayer.style.transform = (direction === 'left') ? 'translateX(-200%)' : 'translateX(200%)';
-        videoPlayer.style.transform = 'translateX(0)';
-    }, 10);
-
-    // Clean up the old video player after the transition
-    oldVideoPlayer.addEventListener('transitionend', () => {
-        videoContainer.removeChild(oldVideoPlayer);
-    });
-}
-
-
-        function handleTouchStart(evt) {
-            const firstTouch = evt.touches[0];
-            xDown = firstTouch.clientX;
-            windowWidth = window.innerWidth;
-        }
-
-        function handleTouchMove(evt) {
-            if (!xDown) return;
-
-            const xUp = evt.touches[0].clientX;
-            const xDiff = xDown - xUp;
-
-            if (Math.abs(xDiff) > windowWidth * swipeThreshold) {
-                interacted = true;
-                if (xDiff > 0) {
-                    swipeRight();
-                } else {
-                    swipeLeft();
-                }
-                xDown = null;
-            }
-        }
-
-        let xDown = null;
-        let windowWidth = window.innerWidth;
-
-        document.addEventListener('touchstart', handleTouchStart, false);
-        document.addEventListener('touchmove', handleTouchMove, false);
-
-        redirectCircle.addEventListener('click', () => {
-            const randomIndex = getRandomIndex([currentIndex, firstVideoIndex]);
-            playVideo(randomIndex);
-        });
-
-        playVideo(currentIndex);
     </script>
 </body>
 </html>
