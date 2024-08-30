@@ -145,6 +145,11 @@ video {
         }
 
         function swipeLeft() {
+            if (currentIndex === firstVideoIndex) {
+                // If the current video is the first video, do not allow swiping
+                return;
+            }
+
             if (videoHistory.length > 0) {
                 const previousIndex = videoHistory.pop();
                 futureVideos.push(currentIndex); // Remember future videos
@@ -153,6 +158,11 @@ video {
         }
 
         function swipeRight() {
+            if (currentIndex === firstVideoIndex) {
+                // If the current video is the first video, do not allow swiping
+                return;
+            }
+
             if (futureVideos.length > 0) {
                 const nextIndex = futureVideos.pop();
                 videoHistory.push(currentIndex); // Keep current video in history
@@ -168,6 +178,7 @@ video {
             }
         }
 
+
         function playVideoWithAnimation(newIndex, direction) {
     const oldVideoPlayer = videoPlayer.cloneNode();
     oldVideoPlayer.src = videoPlayer.src;
@@ -175,8 +186,8 @@ video {
     // Append the cloned video player to the container for the transition effect
     videoContainer.appendChild(oldVideoPlayer);
 
-    // Set the initial position of the videos based on the swipe direction
-    videoPlayer.style.transform = (direction === 'left') ? 'translateX(100%)' : 'translateX(-100%)';
+    // Set the initial position of the new video player based on the swipe direction
+    videoPlayer.style.transform = (direction === 'left') ? 'translateX(200%)' : 'translateX(-200%)';
     oldVideoPlayer.style.transform = 'translateX(0)';
 
     // Start playing the new video
@@ -184,8 +195,8 @@ video {
 
     // Allow the browser to recognize the changes by setting a timeout
     setTimeout(() => {
-        // Move old video out and new video in
-        oldVideoPlayer.style.transform = (direction === 'left') ? 'translateX(-100%)' : 'translateX(100%)';
+        // Move old video out further left and new video in from the right
+        oldVideoPlayer.style.transform = (direction === 'left') ? 'translateX(-200%)' : 'translateX(200%)';
         videoPlayer.style.transform = 'translateX(0)';
     }, 10);
 
@@ -195,9 +206,10 @@ video {
     });
 
     // Set the transition duration for smooth animations
-    oldVideoPlayer.style.transition = 'transform 0.5s ease';
-    videoPlayer.style.transition = 'transform 0.5s ease';
+    oldVideoPlayer.style.transition = 'transform 0.7s ease';  // Adjusted to 0.7s for smoother transition
+    videoPlayer.style.transition = 'transform 0.7s ease';
 }
+
 
 
 
