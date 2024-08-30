@@ -6,7 +6,7 @@
     <title>AHSIYA</title>
     <style>
         #videoContainer {
-    position: fixed; /* Use fixed to cover the entire viewport */
+    position: fixed;
     top: 0;
     left: 0;
     width: 100%;
@@ -19,11 +19,11 @@
 }
 
 video {
-    position: absolute; /* Ensure video is absolutely positioned */
-    max-width: 100%; /* Video won't exceed container width */
-    max-height: 100%; /* Video won't exceed container height */
+    max-width: 100%;
+    max-height: 100%;
     width: auto;
     height: auto;
+    object-fit: contain; /* Ensure video maintains aspect ratio and stays within the container */
 }
 
 #redirectCircle {
@@ -35,8 +35,9 @@ video {
     transform: translate(-50%, -50%);
     display: none;
     cursor: pointer;
-    z-index: 10; /* Ensure it stays above the video */
+    z-index: 10;
 }
+
 
     </style>
 </head>
@@ -49,25 +50,48 @@ video {
     
     <script>
         const videoLinks = [
-        'https://link.storjsatelliteshare.io/s/jwx62xz6ogmk7slngywbl7teegfq/aa1%2Fahsiya-intro.mp4?view=1',
-        'https://link.storjsatelliteshare.io/s/jvljyy2eyfzgvjmkkjzddgi5cxba/aa1%2F3459215cf4440cab50322ac6a685325a.mp4?view=1',
-        'https://link.storjsatelliteshare.io/s/jvq6jpz4xdlp4hqkukcwokrj5jka/aa1%2F46520cc4d47c81df1b27535fef2c0188.mp4?view=1',
-        'https://link.storjsatelliteshare.io/s/jws4vgbqlrnnryclow3wbuiq7h6a/aa1%2F5baf2b70b18ef7c3d0e4d11bacd7c344.mp4?view=1',
-        'https://link.storjsatelliteshare.io/s/jxk6fqdfrdbcuzs25b5ars72wkqq/aa1%2Fd40d1674dc398792c742c6097c29de11.mp4?view=1',
-        'https://link.storjsatelliteshare.io/s/jxlyxosit3s6gdff5n4nayjknbqa/aa1%2Flv_0_20240518220937.mp4?view=1',
-        'https://link.storjsatelliteshare.io/s/juyttxmwqcytvtzaecaggr4pcy4a/aa1%2Flv_0_20240524202351.mp4?view=1',
-        'https://link.storjsatelliteshare.io/s/jueji5zpq6mfl6ryrq6q2o3u6mya/aa1%2Flv_0_20240720225010.mp4?view=1',
-        'https://link.storjsatelliteshare.io/s/jvyif4mzcqq725jh4fxt74zy6auq/aa1%2Flv_0_20240802225004.mp4?view=1',
-        'https://link.storjsatelliteshare.io/s/jul3yknzr3nsyrspiuvwwaybtpja/aa1%2FRDT_20240525_192752.mp4?view=1',
-        'https://link.storjsatelliteshare.io/s/juz655sfzktalb3sah5chsgaydxq/aa2%2F456598408_7804285563026789_5944112310659083646_n.mp4?view=1',
-        'https://link.storjsatelliteshare.io/s/jxczmgy4lqwjwmrhsv67uig54jea/aa2%2F456711265_27216442997954795_7065164847423848830_n.mp4?view=1',
-        'https://link.storjsatelliteshare.io/s/jxzri75mdr3atqfkulfgbupl24zq/aa2%2F456713241_8928871023795866_5871626189483499291_n.mp4?view=1',
-        'https://link.storjsatelliteshare.io/s/jxijijxmiv4xl7saajoozy7etpoa/aa2%2F456909216_8057433167686309_1616290838543572092_n.mp4?view=1',
-        'https://link.storjsatelliteshare.io/s/jxlcn7u4bqagvvnkexxzwznc23kq/aa2%2F457141878_26511636631816530_2267311591772088734_n.mp4?view=1',
-        'https://link.storjsatelliteshare.io/s/jvztunzmq6hcymxpsfpwlnosu5dq/aa2%2F457175770_8057601631002324_1368104476340286838_n.mp4?view=1',
-        'https://link.storjsatelliteshare.io/s/jwry3s4kvnbvs5gfysbo5w34mscq/aa2%2F457228987_8482807861750390_2478128430927144203_n.mp4?view=1',
-        'https://link.storjsatelliteshare.io/s/jxxu5baolzniqwdiqp76a2pts7sa/aa2%2F457280370_7308339682602775_825640068035192075_n.mp4?view=1',
-
+            //aa1 & aa2
+            'https://link.storjsatelliteshare.io/s/jwx62xz6ogmk7slngywbl7teegfq/aa1%2Fahsiya-intro.mp4?view=1',
+            'https://link.storjsatelliteshare.io/s/jvljyy2eyfzgvjmkkjzddgi5cxba/aa1%2F3459215cf4440cab50322ac6a685325a.mp4?view=1',
+            'https://link.storjsatelliteshare.io/s/jvq6jpz4xdlp4hqkukcwokrj5jka/aa1%2F46520cc4d47c81df1b27535fef2c0188.mp4?view=1',
+            'https://link.storjsatelliteshare.io/s/jws4vgbqlrnnryclow3wbuiq7h6a/aa1%2F5baf2b70b18ef7c3d0e4d11bacd7c344.mp4?view=1',
+            'https://link.storjsatelliteshare.io/s/jxk6fqdfrdbcuzs25b5ars72wkqq/aa1%2Fd40d1674dc398792c742c6097c29de11.mp4?view=1',
+            'https://link.storjsatelliteshare.io/s/jxlyxosit3s6gdff5n4nayjknbqa/aa1%2Flv_0_20240518220937.mp4?view=1',
+            'https://link.storjsatelliteshare.io/s/juyttxmwqcytvtzaecaggr4pcy4a/aa1%2Flv_0_20240524202351.mp4?view=1',
+            'https://link.storjsatelliteshare.io/s/jueji5zpq6mfl6ryrq6q2o3u6mya/aa1%2Flv_0_20240720225010.mp4?view=1',
+            'https://link.storjsatelliteshare.io/s/jvyif4mzcqq725jh4fxt74zy6auq/aa1%2Flv_0_20240802225004.mp4?view=1',
+            'https://link.storjsatelliteshare.io/s/jul3yknzr3nsyrspiuvwwaybtpja/aa1%2FRDT_20240525_192752.mp4?view=1',
+            'https://link.storjsatelliteshare.io/s/juz655sfzktalb3sah5chsgaydxq/aa2%2F456598408_7804285563026789_5944112310659083646_n.mp4?view=1',
+            'https://link.storjsatelliteshare.io/s/jxczmgy4lqwjwmrhsv67uig54jea/aa2%2F456711265_27216442997954795_7065164847423848830_n.mp4?view=1',
+            'https://link.storjsatelliteshare.io/s/jxzri75mdr3atqfkulfgbupl24zq/aa2%2F456713241_8928871023795866_5871626189483499291_n.mp4?view=1',
+            'https://link.storjsatelliteshare.io/s/jxijijxmiv4xl7saajoozy7etpoa/aa2%2F456909216_8057433167686309_1616290838543572092_n.mp4?view=1',
+            'https://link.storjsatelliteshare.io/s/jxlcn7u4bqagvvnkexxzwznc23kq/aa2%2F457141878_26511636631816530_2267311591772088734_n.mp4?view=1',
+            'https://link.storjsatelliteshare.io/s/jvztunzmq6hcymxpsfpwlnosu5dq/aa2%2F457175770_8057601631002324_1368104476340286838_n.mp4?view=1',
+            'https://link.storjsatelliteshare.io/s/jwry3s4kvnbvs5gfysbo5w34mscq/aa2%2F457228987_8482807861750390_2478128430927144203_n.mp4?view=1',
+            'https://link.storjsatelliteshare.io/s/jxxu5baolzniqwdiqp76a2pts7sa/aa2%2F457280370_7308339682602775_825640068035192075_n.mp4?view=1',
+            //aa3
+            'https://link.storjsatelliteshare.io/s/ju4ev4jqatxenrdjz4k7s7ibq2zq/aa3%2F456712118_27079694251617710_8803818201813144302_n.mp4?view=1',
+            'https://link.storjsatelliteshare.io/s/juyh6hrrnshkjyzsclqrclskvr4a/aa3%2F456749580_8525474500797609_8927987872149765681_n.mp4?view=1',
+            'https://link.storjsatelliteshare.io/s/jw6c3vcvxn2ttpgnagerfvclsixq/aa3%2F456909177_8530569253628802_2157601955038232852_n.mp4?view=1',
+            'https://link.storjsatelliteshare.io/s/jve3g65h5qgpjtzy665dsdys7lxa/aa3%2F456960283_8091952347537262_9176583819701433476_n.mp4?view=1',
+            'https://link.storjsatelliteshare.io/s/jx44t4aglqgx7bythdkpvo2lfjoa/aa3%2F456968794_8079366542101109_2008377633127268462_n.mp4?view=1',
+            'https://link.storjsatelliteshare.io/s/jwqzme75xt5o4bsp5g3cie647lnq/aa3%2F457030935_8235313939839384_8433259559207984108_n.mp4?view=1',
+            'https://link.storjsatelliteshare.io/s/juz2jv7epvpisemmjpkulhcfbj7q/aa3%2F457031677_8252369621496769_341058514406239094_n.mp4?view=1',
+            'https://link.storjsatelliteshare.io/s/jxqtowzq6nwebwdidpim4q35tlva/aa3%2F457032458_7989383127849786_7991744169935455965_n.mp4?view=1',
+            'https://link.storjsatelliteshare.io/s/jxqbuttj6562tuiabzktqzsa47ba/aa3%2F457051133_8114779411891531_268165964468289871_n.mp4?view=1',
+            'https://link.storjsatelliteshare.io/s/juaj34dng2q2p7iskzaj263myaha/aa3%2F457059425_7907353746030274_5143647059457255424_n.mp4?view=1',
+            'https://link.storjsatelliteshare.io/s/jwv2hipxnt7kmxr3uf3enkantnmq/aa3%2F457097633_8063741563744563_6607798140115739135_n.mp4?view=1',
+            'https://link.storjsatelliteshare.io/s/juhiapxlva4ygelh4mrf4rppl7ka/aa3%2F457120474_8111521452224272_5227752706807992624_n.mp4?view=1',
+            'https://link.storjsatelliteshare.io/s/jx3wilkevnt34oeo2vkc65xqmrea/aa3%2F457141434_8324332840957194_2581841303439851756_n.mp4?view=1',
+            'https://link.storjsatelliteshare.io/s/jxbwacpymrcuetunmgfv6f647tgq/aa3%2F457141588_7822963121147563_572927943977231091_n.mp4?view=1',
+            'https://link.storjsatelliteshare.io/s/jugpwsjhshp7awq2juug5zclrdlq/aa3%2F457141878_8168067109913609_24497871023257764_n.mp4?view=1',
+            'https://link.storjsatelliteshare.io/s/jvyrhjctebln2bxwsgc57r2isyqq/aa3%2F457178320_7994498433919011_3586451248330676882_n.mp4?view=1',
+            'https://link.storjsatelliteshare.io/s/jxrfrzfbhmlinixuognod7sivkva/aa3%2F457371468_8291155397616728_8436941396808826273_n.mp4?view=1',
+            'https://link.storjsatelliteshare.io/s/ju4g5f6p3xoyf4b5f5ie6xuf5sva/aa3%2F457398999_8398488236881785_5918388628037058802_n.mp4?view=1',
+            'https://link.storjsatelliteshare.io/s/juzsk4arknxjtddzbgbaelssc4fa/aa3%2F457401428_8117948201604194_4280448947031160606_n.mp4?view=1',
+            'https://link.storjsatelliteshare.io/s/jw5sqt7k6pzrm4jgojatenizvo4q/aa3%2F457401838_8260794497312822_734039405723271159_n.mp4?view=1',
+            'https://link.storjsatelliteshare.io/s/jury2d7tblqeupzvovvh35fx3ppq/aa3%2F457516604_8212693205511660_8142781536943206828_n.mp4?view=1',
+            'https://link.storjsatelliteshare.io/s/jwdm3xokmabmgnnhxhzleqkbwpxa/aa3%2F457529690_8136910459723607_4307022265125813690_n.mp4?view=1',  
         ];
 
         let currentIndex = 0;
@@ -156,27 +180,27 @@ video {
         }
 
         function playVideoWithAnimation(newIndex, direction) {
-    const oldVideoPlayer = videoPlayer.cloneNode();
-    oldVideoPlayer.src = videoPlayer.src;
+        const oldVideoPlayer = videoPlayer.cloneNode();
+        oldVideoPlayer.src = videoPlayer.src;
 
-    videoContainer.appendChild(oldVideoPlayer);
+        videoContainer.appendChild(oldVideoPlayer);
 
-    videoPlayer.style.transform = (direction === 'left') ? 'translateX(100%)' : 'translateX(-100%)';
-    playVideo(newIndex);
+        videoPlayer.style.transform = (direction === 'left') ? 'translateX(100%)' : 'translateX(-100%)';
+        playVideo(newIndex);
 
-    setTimeout(() => {
-        oldVideoPlayer.style.transform = (direction === 'left') ? 'translateX(-100%)' : 'translateX(100%)';
-        videoPlayer.style.transform = 'translateX(0)';
-    }, 10);
+        setTimeout(() => {
+            oldVideoPlayer.style.transform = (direction === 'left') ? 'translateX(-100%)' : 'translateX(100%)';
+            videoPlayer.style.transform = 'translateX(0)';
+        }, 10);
 
-    // Ensure the old video completely exits the screen before removing it
-    oldVideoPlayer.addEventListener('transitionend', () => {
-        videoContainer.removeChild(oldVideoPlayer);
-    });
+        // Ensure the old video completely exits the screen before removing it
+        oldVideoPlayer.addEventListener('transitionend', () => {
+            videoContainer.removeChild(oldVideoPlayer);
+        });
 
-    // Set the transition duration (increase if necessary for smoother exit)
-    oldVideoPlayer.style.transition = 'transform 0.5s ease';
-}
+        // Set the transition duration (increase if necessary for smoother exit)
+        oldVideoPlayer.style.transition = 'transform 0.5s ease';
+    }
 
 
 
