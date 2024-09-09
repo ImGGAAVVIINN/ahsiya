@@ -146,14 +146,13 @@
         }
 
         // Add keydown event listener for arrow key navigation
-document.addEventListener('keydown', function(event) {
-    if (event.keyCode === 37) { // Left arrow key
-        swipeLeft();
-    } else if (event.keyCode === 39) { // Right arrow key
-        swipeRight();
-    }
-});
-
+        document.addEventListener('keydown', function(event) {
+            if (event.keyCode === 37) { // Left arrow key
+                swipeLeft();
+            } else if (event.keyCode === 39) { // Right arrow key
+                swipeRight();
+            }
+        });
 
         function playVideoWithAnimation(newIndex, direction) {
             const oldVideoPlayer = videoPlayer.cloneNode();
