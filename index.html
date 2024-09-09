@@ -145,6 +145,16 @@
             }
         }
 
+        // Add keydown event listener for arrow key navigation
+document.addEventListener('keydown', function(event) {
+    if (event.keyCode === 37) { // Left arrow key
+        swipeLeft();
+    } else if (event.keyCode === 39) { // Right arrow key
+        swipeRight();
+    }
+});
+
+
         function playVideoWithAnimation(newIndex, direction) {
             const oldVideoPlayer = videoPlayer.cloneNode();
             oldVideoPlayer.src = videoPlayer.src;
@@ -623,7 +633,8 @@ document.addEventListener('touchend', handleTouchEnd, false);
             'https://link.storjshare.io/s/jwjae7bsrfcerqsmnp3kmjmw4tua/aa18/454110208_7985658004887027_8324575384582888930_n.mp4?wrap=0',
             'https://link.storjshare.io/s/jxs22tzhbtepiyhr6m3n67m4yaya/aa18/rapidsave.com_c_u_n_t-ijy3sz8jy3nd1.mp4?wrap=0',
             'https://link.storjshare.io/s/jutig5wwwonhnnz5pzj4ishwyhdq/aa18/rapidsave.com_im_sorry_little_one-kwsqrmc4z2nd1.mp4?wrap=0',
-            'https://link.storjshare.io/s/jwrhqjsfln72nt7vfv3v54vlpnja/aa18/rapidsave.com_im_the_scatman-ad33925sczmd1.mp4?wrap=0,'
+            'https://link.storjshare.io/s/jwrhqjsfln72nt7vfv3v54vlpnja/aa18/rapidsave.com_im_the_scatman-ad33925sczmd1.mp4?wrap=0',
+            //aa19 backward
         ];
 
         // Initialize videoList after videoLinks is defined
