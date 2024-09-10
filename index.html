@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AHSIYA</title>
     <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden; /* Prevent scrolling */
+            background-color: #000;
+        }
         #videoContainer {
             position: fixed;
             top: 0;
@@ -51,7 +57,22 @@
         <div id="redirectCircle"></div>
     </div>
     
+    <div id="allWatchedScreen" style="display:none; background-color: black; color: white; height: 98vh; width: 95vw; display: flex; align-items: center; justify-content: center;">
+        <h1>All Videos Have Been Watched</h1>
+    </div>
+
+    <div id="resetContainer" style="position: absolute; top: 20px; right: 20px;">
+        <button id="resetButton" style="padding: 10px 20px; font-size: 15px;">Reset</button>
+    </div>
+    
+
     <script>
+        document.getElementById('resetButton').addEventListener('click', function() {
+    localStorage.removeItem('viewedVideos');  // Clear the viewed videos list from localStorage
+    location.reload();  // Reload the page to restart the video selection
+});
+
+
         let currentIndex = 0;
         let videoHistory = [];
         let futureVideos = [];
@@ -105,17 +126,24 @@
             }
         }
 
-        function getRandomIndex(excludeIndexes) {
-            const validIndexes = videoList
-                .map((_, index) => index)
-                .filter(index => !excludeIndexes.includes(index) && index !== firstVideoIndex);
+        function getRandomIndex() {
+    let viewedVideos = JSON.parse(localStorage.getItem('viewedVideos')) || [];
+    
+    const validIndexes = videoList
+        .map((_, index) => index)
+        .filter(index => !viewedVideos.includes(index) && index !== firstVideoIndex);
 
-            if (validIndexes.length === 0) {
-                return excludeIndexes[Math.floor(Math.random() * excludeIndexes.length)];
-            }
+    if (validIndexes.length === 0) {
+        // Show the "All Videos Watched" screen
+        document.getElementById('videoContainer').style.display = 'none';  // Hide video player
+        document.getElementById('allWatchedScreen').style.display = 'flex';  // Show the div
+        return null;
+    }
 
-            return validIndexes[Math.floor(Math.random() * validIndexes.length)];
-        }
+    return validIndexes[Math.floor(Math.random() * validIndexes.length)];
+}
+
+
 
         function swipeLeft() {
             if (currentIndex === firstVideoIndex) return;
@@ -128,22 +156,26 @@
         }
 
         function swipeRight() {
-            if (currentIndex === firstVideoIndex) return;
+    if (currentIndex === firstVideoIndex) return;
 
-            if (futureVideos.length > 0) {
-                const nextIndex = futureVideos.pop();
-                videoHistory.push(currentIndex); // Keep current video in history
-                playVideoWithAnimation(nextIndex, 'left');
-            } else {
-                videoHistory.push(currentIndex);
-                if (videoHistory.length > maxHistorySize) {
-                    videoHistory.shift(); // Keep history within limit
-                }
+    let viewedVideos = JSON.parse(localStorage.getItem('viewedVideos')) || [];
+    if (!viewedVideos.includes(currentIndex)) {
+        viewedVideos.push(currentIndex);
+        localStorage.setItem('viewedVideos', JSON.stringify(viewedVideos));
+    }
 
-                const newIndex = getRandomIndex([...videoHistory, ...lastTenVideos, currentIndex]);
-                playVideoWithAnimation(newIndex, 'left');
-            }
-        }
+    videoHistory.push(currentIndex);
+    if (videoHistory.length > maxHistorySize) {
+        videoHistory.shift(); // Keep history within limit
+    }
+
+    const newIndex = getRandomIndex();
+    if (newIndex !== null) {
+        playVideoWithAnimation(newIndex, 'left');
+    }
+}
+
+
 
         // Add keydown event listener for arrow key navigation
         document.addEventListener('keydown', function(event) {
@@ -277,8 +309,8 @@ document.addEventListener('touchend', handleTouchEnd, false);
 
         // Move the videoLinks array to the bottom
         const videoLinks = [
-            //intro
-            'https://link.storjshare.io/s/jvjd3ugvdzm7nldzvwhsgvhjbyva/aa1/ahsiya-intro.mp4?wrap=0',
+                        //intro
+                        'https://link.storjshare.io/s/jvjd3ugvdzm7nldzvwhsgvhjbyva/aa1/ahsiya-intro.mp4?wrap=0',
             //Connected to my walls like spiderman
             'https://link.storjshare.io/s/jwyxwgqhyltdgdopmhymsf5idebq/connected-to-my-walls-like-spiderman/ILLIT%20-%20Magnetic%20(CupcakKe%20Remix).mp4?wrap=0',
             'https://link.storjshare.io/s/jvqsjvrm2t35ulxaecivbihwzksa/connected-to-my-walls-like-spiderman/Bluey%20Theme%20Song%20(CupcakKe%20Remix).mp4?wrap=0',
