@@ -200,12 +200,12 @@ function swipeRight() {
         });
 
         function playVideoWithAnimation(newIndex, direction) {
-    // If direction is left and there are no future videos, clear futureVideos
+    // Clear futureVideos if we are moving forward and there are no future videos
     if (direction === 'left' && futureVideos.length === 0) {
         futureVideos = [];
     }
 
-    // Rest of your animation logic...
+    // Clone the video player to create the outgoing video animation
     const oldVideoPlayer = videoPlayer.cloneNode();
     oldVideoPlayer.src = videoPlayer.src;
     oldVideoPlayer.style.position = 'absolute';
@@ -219,26 +219,39 @@ function swipeRight() {
 
     // Set the initial position of the new video player based on the swipe direction
     videoPlayer.style.transition = 'none';
-    videoPlayer.style.transform = (direction === 'left') ? 'translateX(100%)' : 'translateX(-100%)';
+    if (direction === 'left') {
+        videoPlayer.style.transform = 'translateX(100%)'; // Start offscreen on the right
+    } else {
+        videoPlayer.style.transform = 'translateX(-100%)'; // Start offscreen on the left
+    }
+
+    // Trigger reflow to reset the CSS transition (forces the browser to recognize the change)
+    videoPlayer.offsetHeight;
 
     // Start playing the new video
     playVideo(newIndex);
 
-    // Set the transition properties
+    // Set the transition properties for both old and new videos
     oldVideoPlayer.style.transition = 'transform 0.7s ease';
     videoPlayer.style.transition = 'transform 0.7s ease';
 
+    // Move the old video out and the new video in
     setTimeout(() => {
-        // Move old video out and new video in
-        oldVideoPlayer.style.transform = (direction === 'left') ? 'translateX(-200%)' : 'translateX(200%)';
-        videoPlayer.style.transform = 'translateX(0)';
+        if (direction === 'left') {
+            oldVideoPlayer.style.transform = 'translateX(-100%)'; // Move old video to the left
+            videoPlayer.style.transform = 'translateX(0)';        // Move new video in from the right
+        } else {
+            oldVideoPlayer.style.transform = 'translateX(100%)';  // Move old video to the right
+            videoPlayer.style.transform = 'translateX(0)';        // Move new video in from the left
+        }
     }, 10);
 
-    // Clean up the old video player after the transition
+    // Clean up the old video player after the transition is complete
     oldVideoPlayer.addEventListener('transitionend', () => {
         videoContainer.removeChild(oldVideoPlayer);
     });
 }
+
 
 
 
@@ -698,6 +711,7 @@ document.addEventListener('touchend', handleTouchEnd, false);
             'https://link.storjshare.io/s/jwnsv7xhqdad4vxinsgyvlg3ljpq/aa19/Snapinsta.app_video_An9cOVBE_57jd8aujwLjLRmlMEUuqHmDxBFyujD_IJVM9qHeXSbyKdd1OSFAXNt4StgPeWrhudJOL5re4bUjtfRe.mp4?wrap=0',
             'https://link.storjshare.io/s/jx3jlqcf53qp72kwblsclrneopjq/aa19/Snapinsta.app_video_An9TzXq4Q32m7NpvkeKvwsA3UbfXvFq8zs0zLtI93HUSNPAVH9Tpi5N1RieXIDK4EQLPxpbN-JuaNbYelxGuE0tl.mp4?wrap=0',
             'https://link.storjshare.io/s/jujm5c2bimiy636dmsyf7aaylrha/aa19/Snapinsta.app_video_E44D94E197B63ED807987CCBF09DCDB4_video_dashinit.mp4?wrap=0',
+            //aa20 (mobile direct)
 
         ];
 // test commit
