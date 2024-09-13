@@ -88,17 +88,25 @@
         let interacted = false;
 
         function playVideo(index) {
-            currentIndex = index;
-            videoPlayer.src = videoList[index];
-            videoPlayer.controls = (index !== firstVideoIndex);
-            videoPlayer.muted = (index === firstVideoIndex) ? !interacted : false;
-            videoPlayer.loop = (index !== firstVideoIndex);
-            videoPlayer.play();
+    currentIndex = index;
+    videoPlayer.src = videoList[index];
+    videoPlayer.controls = (index !== firstVideoIndex);
+    videoPlayer.muted = (index === firstVideoIndex) ? !interacted : false;
+    videoPlayer.loop = (index !== firstVideoIndex);
+    videoPlayer.play();
 
-            // Display the redirectCircle only for the first video
-            redirectCircle.style.display = (index === firstVideoIndex) ? 'block' : 'none';
-            centerRedirectCircle(); // Ensure the circle stays centered
-        }
+    // Display the redirectCircle only for the first video
+    redirectCircle.style.display = (index === firstVideoIndex) ? 'block' : 'none';
+    centerRedirectCircle(); // Ensure the circle stays centered
+
+    // Add the video to the list of viewed videos
+    let viewedVideos = JSON.parse(localStorage.getItem('viewedVideos')) || [];
+    if (!viewedVideos.includes(index)) {
+        viewedVideos.push(index);
+        localStorage.setItem('viewedVideos', JSON.stringify(viewedVideos));
+    }
+}
+
 
         function adjustVideoSize() {
             const videoAspectRatio = videoPlayer.videoWidth / videoPlayer.videoHeight;
@@ -134,9 +142,9 @@
         .filter(index => !viewedVideos.includes(index) && index !== firstVideoIndex);
 
     if (validIndexes.length === 0) {
-        // Show the "All Videos Watched" screen
-        document.getElementById('videoContainer').style.display = 'none';  // Hide video player
-        document.getElementById('allWatchedScreen').style.display = 'flex';  // Show the div
+        // All videos watched, show the "All Videos Watched" screen
+        document.getElementById('videoContainer').style.display = 'none';
+        document.getElementById('allWatchedScreen').style.display = 'flex';
         return null;
     }
 
@@ -144,36 +152,41 @@
 }
 
 
-
-        function swipeLeft() {
-            if (currentIndex === firstVideoIndex) return;
-
-            if (videoHistory.length > 0) {
-                const previousIndex = videoHistory.pop();
-                futureVideos.push(currentIndex); // Remember future videos
-                playVideoWithAnimation(previousIndex, 'right');
-            }
-        }
-
-        function swipeRight() {
+function swipeLeft() {
     if (currentIndex === firstVideoIndex) return;
 
-    let viewedVideos = JSON.parse(localStorage.getItem('viewedVideos')) || [];
-    if (!viewedVideos.includes(currentIndex)) {
-        viewedVideos.push(currentIndex);
-        localStorage.setItem('viewedVideos', JSON.stringify(viewedVideos));
-    }
-
-    videoHistory.push(currentIndex);
-    if (videoHistory.length > maxHistorySize) {
-        videoHistory.shift(); // Keep history within limit
-    }
-
-    const newIndex = getRandomIndex();
-    if (newIndex !== null) {
-        playVideoWithAnimation(newIndex, 'left');
+    if (videoHistory.length > 0) {
+        const previousIndex = videoHistory.pop();
+        futureVideos.push(currentIndex); // Store current video for forward navigation
+        playVideoWithAnimation(previousIndex, 'right');
     }
 }
+
+
+function swipeRight() {
+    if (currentIndex === firstVideoIndex) return;
+
+    // Check if there are future videos to navigate forward
+    if (futureVideos.length > 0) {
+        const nextIndex = futureVideos.pop();
+        videoHistory.push(currentIndex); // Store current video in history for backward navigation
+        playVideoWithAnimation(nextIndex, 'left');
+    } else {
+        // Store current video in history
+        videoHistory.push(currentIndex);
+        if (videoHistory.length > maxHistorySize) {
+            videoHistory.shift(); // Keep history within size limit
+        }
+
+        // Select the next random video (that hasn’t been watched)
+        const newIndex = getRandomIndex();
+        if (newIndex !== null) {
+            playVideoWithAnimation(newIndex, 'left');
+        }
+    }
+}
+
+
 
 
 
@@ -187,43 +200,47 @@
         });
 
         function playVideoWithAnimation(newIndex, direction) {
-            const oldVideoPlayer = videoPlayer.cloneNode();
-            oldVideoPlayer.src = videoPlayer.src;
-            oldVideoPlayer.style.position = 'absolute';
-            oldVideoPlayer.style.top = 0;
-            oldVideoPlayer.style.left = 0;
-            oldVideoPlayer.style.width = '100%';
-            oldVideoPlayer.style.height = '100%';
+    // If direction is left and there are no future videos, clear futureVideos
+    if (direction === 'left' && futureVideos.length === 0) {
+        futureVideos = [];
+    }
 
-            // Append the cloned video player to the container for the transition effect
-            videoContainer.appendChild(oldVideoPlayer);
+    // Rest of your animation logic...
+    const oldVideoPlayer = videoPlayer.cloneNode();
+    oldVideoPlayer.src = videoPlayer.src;
+    oldVideoPlayer.style.position = 'absolute';
+    oldVideoPlayer.style.top = 0;
+    oldVideoPlayer.style.left = 0;
+    oldVideoPlayer.style.width = '100%';
+    oldVideoPlayer.style.height = '100%';
 
-            // Set the initial position of the new video player based on the swipe direction
-            videoPlayer.style.transition = 'none';
-            videoPlayer.style.transform = (direction === 'left') ? 'translateX(100%)' : 'translateX(-100%)';
+    // Append the cloned video player to the container for the transition effect
+    videoContainer.appendChild(oldVideoPlayer);
 
-            // Trigger reflow to reset the CSS transition
-            videoPlayer.offsetHeight; // This line forces the browser to recognize the change
+    // Set the initial position of the new video player based on the swipe direction
+    videoPlayer.style.transition = 'none';
+    videoPlayer.style.transform = (direction === 'left') ? 'translateX(100%)' : 'translateX(-100%)';
 
-            // Start playing the new video
-            playVideo(newIndex);
+    // Start playing the new video
+    playVideo(newIndex);
 
-            // Set the transition properties
-            oldVideoPlayer.style.transition = 'transform 0.7s ease';
-            videoPlayer.style.transition = 'transform 0.7s ease';
+    // Set the transition properties
+    oldVideoPlayer.style.transition = 'transform 0.7s ease';
+    videoPlayer.style.transition = 'transform 0.7s ease';
 
-            // Allow the browser to recognize the changes by setting a timeout
-            setTimeout(() => {
-                // Move old video out and new video in
-                oldVideoPlayer.style.transform = (direction === 'left') ? 'translateX(-200%)' : 'translateX(200%)';
-                videoPlayer.style.transform = 'translateX(0)';
-            }, 10);
+    setTimeout(() => {
+        // Move old video out and new video in
+        oldVideoPlayer.style.transform = (direction === 'left') ? 'translateX(-200%)' : 'translateX(200%)';
+        videoPlayer.style.transform = 'translateX(0)';
+    }, 10);
 
-            // Clean up the old video player after the transition
-            oldVideoPlayer.addEventListener('transitionend', () => {
-                videoContainer.removeChild(oldVideoPlayer);
-            });
-        }
+    // Clean up the old video player after the transition
+    oldVideoPlayer.addEventListener('transitionend', () => {
+        videoContainer.removeChild(oldVideoPlayer);
+    });
+}
+
+
 
         function handleTouchStart(evt) {
     const firstTouch = evt.touches[0];
@@ -309,8 +326,8 @@ document.addEventListener('touchend', handleTouchEnd, false);
 
         // Move the videoLinks array to the bottom
         const videoLinks = [
-                        //intro
-                        'https://link.storjshare.io/s/jvjd3ugvdzm7nldzvwhsgvhjbyva/aa1/ahsiya-intro.mp4?wrap=0',
+            //intro
+            'https://link.storjshare.io/s/jvjd3ugvdzm7nldzvwhsgvhjbyva/aa1/ahsiya-intro.mp4?wrap=0',
             //Connected to my walls like spiderman
             'https://link.storjshare.io/s/jwyxwgqhyltdgdopmhymsf5idebq/connected-to-my-walls-like-spiderman/ILLIT%20-%20Magnetic%20(CupcakKe%20Remix).mp4?wrap=0',
             'https://link.storjshare.io/s/jvqsjvrm2t35ulxaecivbihwzksa/connected-to-my-walls-like-spiderman/Bluey%20Theme%20Song%20(CupcakKe%20Remix).mp4?wrap=0',
@@ -681,6 +698,7 @@ document.addEventListener('touchend', handleTouchEnd, false);
             'https://link.storjshare.io/s/jwnsv7xhqdad4vxinsgyvlg3ljpq/aa19/Snapinsta.app_video_An9cOVBE_57jd8aujwLjLRmlMEUuqHmDxBFyujD_IJVM9qHeXSbyKdd1OSFAXNt4StgPeWrhudJOL5re4bUjtfRe.mp4?wrap=0',
             'https://link.storjshare.io/s/jx3jlqcf53qp72kwblsclrneopjq/aa19/Snapinsta.app_video_An9TzXq4Q32m7NpvkeKvwsA3UbfXvFq8zs0zLtI93HUSNPAVH9Tpi5N1RieXIDK4EQLPxpbN-JuaNbYelxGuE0tl.mp4?wrap=0',
             'https://link.storjshare.io/s/jujm5c2bimiy636dmsyf7aaylrha/aa19/Snapinsta.app_video_E44D94E197B63ED807987CCBF09DCDB4_video_dashinit.mp4?wrap=0',
+
         ];
 // test commit
         // Initialize videoList after videoLinks is defined
