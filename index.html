@@ -145,11 +145,17 @@
         // All videos watched, show the "All Videos Watched" screen
         document.getElementById('videoContainer').style.display = 'none';
         document.getElementById('allWatchedScreen').style.display = 'flex';
+        
+        // Pause or mute the video player
+        videoPlayer.pause();  // Stop the video
+        videoPlayer.muted = true;  // Optionally mute the video, if needed
+        
         return null;
     }
 
     return validIndexes[Math.floor(Math.random() * validIndexes.length)];
 }
+
 
 
 function swipeLeft() {
@@ -340,7 +346,6 @@ document.addEventListener('touchend', handleTouchEnd, false);
         // Move the videoLinks array to the bottom
         const videoLinks = [
             //intro
-            'https://link.storjshare.io/s/jvjd3ugvdzm7nldzvwhsgvhjbyva/aa1/ahsiya-intro.mp4?wrap=0',
             //Connected to my walls like spiderman
             'https://link.storjshare.io/s/jwyxwgqhyltdgdopmhymsf5idebq/connected-to-my-walls-like-spiderman/ILLIT%20-%20Magnetic%20(CupcakKe%20Remix).mp4?wrap=0',
             'https://link.storjshare.io/s/jvqsjvrm2t35ulxaecivbihwzksa/connected-to-my-walls-like-spiderman/Bluey%20Theme%20Song%20(CupcakKe%20Remix).mp4?wrap=0',
@@ -714,10 +719,46 @@ document.addEventListener('touchend', handleTouchEnd, false);
             //aa20 (mobile direct)
 
         ];
-// test commit
         // Initialize videoList after videoLinks is defined
         videoList = [...videoLinks];
         playVideo(currentIndex);
+
+
+        const introVideo = 'https://link.storjshare.io/s/jvjd3ugvdzm7nldzvwhsgvhjbyva/aa1/ahsiya-intro.mp4?wrap=0';
+        
+        function playIntroVideo() {
+    videoPlayer.src = introVideo;
+    videoPlayer.controls = false; // Hide controls for intro video
+    videoPlayer.muted = true; // Keep the intro muted if required
+    videoPlayer.loop = false; // Play the intro once
+    videoPlayer.play();
+    
+    redirectCircle.style.display = 'block'; // Show redirectCircle for intro
+    
+    videoPlayer.onended = function() {
+        // After the intro video ends, start playing regular videos
+        playRandomVideo();
+    };
+}
+
+function playRandomVideo() {
+    let newIndex = getRandomIndex(); // Get a random index for other videos
+    if (newIndex !== null) {
+        playVideo(newIndex);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    adjustVideoSize();
+    centerRedirectCircle();
+    removeFullscreenButton();
+    
+    // Play intro video first
+    playIntroVideo();
+});
+
+
+
     </script>
 </body>
 </html>
