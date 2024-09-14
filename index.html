@@ -343,6 +343,50 @@ document.addEventListener('touchend', handleTouchEnd, false);
             playVideo(randomIndex);
         });
 
+        document.addEventListener('DOMContentLoaded', () => {
+            adjustVideoSize();
+            centerRedirectCircle();
+            removeFullscreenButton();
+            
+            // Play intro video first
+            playIntroVideo();
+        });
+
+        function playIntroVideo() {
+            videoPlayer.src = introVideo;
+            videoPlayer.controls = false;  // Hide controls for intro video
+            videoPlayer.muted = true;      // Mute the intro if required
+            videoPlayer.loop = false;      // Play intro only once
+            videoPlayer.play();
+            
+            redirectCircle.style.display = 'block';  // Show redirectCircle for intro
+
+            // Event listener to freeze the last frame
+            videoPlayer.addEventListener('timeupdate', function() {
+                // Check if video is near the end (less than 0.1 seconds left)
+                if (videoPlayer.duration - videoPlayer.currentTime < 0.1) {
+                    videoPlayer.pause(); // Freeze at the last frame by pausing
+                    videoPlayer.currentTime = videoPlayer.duration; // Ensure it stays at the last frame
+                }
+            });
+
+            videoPlayer.onended = function() {
+                // Proceed to play the next random video after a short delay if needed
+                setTimeout(() => {
+                    playRandomVideo();
+                }, 1000); // Delay if necessary, adjust timing as needed
+            };
+        }
+
+        function playRandomVideo() {
+            let newIndex = getRandomIndex(); // Get a random index for other videos
+            if (newIndex !== null) {
+                playVideo(newIndex);
+            }
+        }
+
+        const introVideo = 'https://link.storjshare.io/s/jvjd3ugvdzm7nldzvwhsgvhjbyva/aa1/ahsiya-intro.mp4?wrap=0';
+
         // Move the videoLinks array to the bottom
         const videoLinks = [
             //intro
@@ -722,42 +766,6 @@ document.addEventListener('touchend', handleTouchEnd, false);
         // Initialize videoList after videoLinks is defined
         videoList = [...videoLinks];
         playVideo(currentIndex);
-
-
-        const introVideo = 'https://link.storjshare.io/s/jvjd3ugvdzm7nldzvwhsgvhjbyva/aa1/ahsiya-intro.mp4?wrap=0';
-        
-        function playIntroVideo() {
-    videoPlayer.src = introVideo;
-    videoPlayer.controls = false; // Hide controls for intro video
-    videoPlayer.muted = true; // Keep the intro muted if required
-    videoPlayer.loop = false; // Play the intro once
-    videoPlayer.play();
-    
-    redirectCircle.style.display = 'block'; // Show redirectCircle for intro
-    
-    videoPlayer.onended = function() {
-        // After the intro video ends, start playing regular videos
-        playRandomVideo();
-    };
-}
-
-function playRandomVideo() {
-    let newIndex = getRandomIndex(); // Get a random index for other videos
-    if (newIndex !== null) {
-        playVideo(newIndex);
-    }
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    adjustVideoSize();
-    centerRedirectCircle();
-    removeFullscreenButton();
-    
-    // Play intro video first
-    playIntroVideo();
-});
-
-
 
     </script>
 </body>
