@@ -53,7 +53,7 @@
 <body>
 
     <div id="videoContainer">
-        <video id="videoPlayer" autoplay muted playsinline preload="auto" poster="https://cdn.indiawealth.in/public/images/transparent-background-mini.png"></video>
+        <video id="videoPlayer" autoplay muted playsinline preload="auto" loop poster="https://cdn.indiawealth.in/public/images/transparent-background-mini.png"></video>
         <div id="redirectCircle"></div>
     </div>
     
@@ -363,18 +363,18 @@ document.addEventListener('touchend', handleTouchEnd, false);
 
             // Event listener to freeze the last frame
             videoPlayer.addEventListener('timeupdate', function() {
-                // Check if video is near the end (less than 0.1 seconds left)
+                // Check if the video is near the end (less than 0.1 seconds left)
                 if (videoPlayer.duration - videoPlayer.currentTime < 0.1) {
-                    videoPlayer.pause(); // Freeze at the last frame by pausing
-                    videoPlayer.currentTime = videoPlayer.duration; // Ensure it stays at the last frame
+                    videoPlayer.currentTime = 0;  // Reset to the beginning
+                    videoPlayer.play();  // Start playing again
                 }
             });
 
+
             videoPlayer.onended = function() {
-                // Proceed to play the next random video after a short delay if needed
-                setTimeout(() => {
-                    playRandomVideo();
-                }, 1000); // Delay if necessary, adjust timing as needed
+                playVideo(currentIndex); // Replay the current video
+                videoPlayer.currentTime = 0;  // Reset to the beginning
+    videoPlayer.play();  // Start playing again
             };
         }
 
@@ -389,7 +389,6 @@ document.addEventListener('touchend', handleTouchEnd, false);
 
         // Move the videoLinks array to the bottom
         const videoLinks = [
-            //intro
             //Connected to my walls like spiderman
             'https://link.storjshare.io/s/jwyxwgqhyltdgdopmhymsf5idebq/connected-to-my-walls-like-spiderman/ILLIT%20-%20Magnetic%20(CupcakKe%20Remix).mp4?wrap=0',
             'https://link.storjshare.io/s/jvqsjvrm2t35ulxaecivbihwzksa/connected-to-my-walls-like-spiderman/Bluey%20Theme%20Song%20(CupcakKe%20Remix).mp4?wrap=0',
