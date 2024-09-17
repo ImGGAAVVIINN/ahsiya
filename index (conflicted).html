@@ -153,12 +153,9 @@
     return validIndexes[Math.floor(Math.random() * validIndexes.length)];
 }
 
-
-
-
 function swipeLeft() {
-    // Disable swipe for the intro video
-    if (currentIndex === firstVideoIndex) return;
+    // Disable swipe for the intro video or the first randomly generated video
+    if (currentIndex === firstVideoIndex || isFirstRandomVideo) return;
 
     if (videoHistory.length > 0) {
         const previousIndex = videoHistory.pop();
@@ -168,8 +165,8 @@ function swipeLeft() {
 }
 
 function swipeRight() {
-    // Disable swipe for the intro video
-    if (currentIndex === firstVideoIndex) return;
+    // Disable swipe for the intro video or the first randomly generated video
+    if (currentIndex === firstVideoIndex || isFirstRandomVideo) return;
 
     if (futureVideos.length > 0) {
         const nextIndex = futureVideos.pop();
@@ -183,16 +180,11 @@ function swipeRight() {
 
         const newIndex = getRandomIndex();
         if (newIndex !== null) {
+            isFirstRandomVideo = false;  // Reset the flag after the first random video
             playVideoWithAnimation(newIndex, 'left');
         }
     }
 }
-
-
-
-
-
-
 
         // Add keydown event listener for arrow key navigation
         document.addEventListener('keydown', function(event) {
@@ -351,21 +343,38 @@ document.addEventListener('touchend', handleTouchEnd, false);
             playIntroVideo();
         });
 
-function playIntroVideo() {
-    videoPlayer.src = introVideo;
-    videoPlayer.controls = false;  // Hide controls for intro video
-    videoPlayer.muted = true;      // Mute the intro if required
-    videoPlayer.loop = false;      // Play intro only once
-    videoPlayer.play();
-    
-    redirectCircle.style.display = 'block';  // Show redirectCircle for intro
+        function playIntroVideo() {
+            videoPlayer.src = introVideo;
+            videoPlayer.controls = false;  // Hide controls for intro video
+            videoPlayer.muted = true;      // Mute the intro if required
+            videoPlayer.loop = false;      // Play intro only once
+            videoPlayer.play();
+            
+            redirectCircle.style.display = 'block';  // Show redirectCircle for intro
 
-    // Freeze the video when it ends
-    videoPlayer.onended = function() {
-        videoPlayer.pause();  // Pause the video
-        videoPlayer.currentTime = videoPlayer.duration;  // Set the video time to the last frame
-    };
-}
+            // Event listener to freeze the last frame
+            videoPlayer.addEventListener('timeupdate', function() {
+                // Check if the video is near the end (less than 0.1 seconds left)
+                if (videoPlayer.duration - videoPlayer.currentTime < 0.1) {
+                    videoPlayer.currentTime = 0;  // Reset to the beginning
+                    videoPlayer.play();  // Start playing again
+                }
+            });
+
+
+            videoPlayer.onended = function() {
+                playVideo(currentIndex); // Replay the current video
+                videoPlayer.currentTime = 0;  // Reset to the beginning
+    videoPlayer.play();  // Start playing again
+            };
+        }
+
+        function playRandomVideo() {
+            let newIndex = getRandomIndex(); // Get a random index for other videos
+            if (newIndex !== null) {
+                playVideo(newIndex);
+            }
+        }
 
         const introVideo = 'https://link.storjshare.io/s/jvjd3ugvdzm7nldzvwhsgvhjbyva/aa1/ahsiya-intro.mp4?wrap=0';
 
@@ -779,24 +788,6 @@ function playIntroVideo() {
             'https://link.storjshare.io/s/jxg7chz3gru535d35szu4cbjshrq/aa20/RDT_20240909_172040.mp4?wrap=0',
             'https://link.storjshare.io/s/jwdaffvnuctagmhtw5soc527lyxq/aa20/RDT_20240909_171958.mp4?wrap=0',
             'https://link.storjshare.io/s/jwpakoa3nwukxl7fuvgmbnvbexna/aa20/RDT_20240909_171917.mp4?wrap=0',
-            //aa21 backward
-            'https://link.storjshare.io/s/jxbzdqaoj66q7vmalhbqydq4nc3q/aa21/448629348_8116691588390714_2404796169072753012_n.mp4?wrap=0',
-            'https://link.storjshare.io/s/jx6zq4qiinr5cjbwitt2k6jatoda/aa21/452452319_7222255784542688_5256921327272981534_n.mp4?wrap=0',
-            'https://link.storjshare.io/s/jww25wqimw6oycdrmcj5aomvrpra/aa21/452455286_8900415063318447_4798621891938354658_n.mp4?wrap=0',
-            'https://link.storjshare.io/s/jwr5pnuvvsv2z3da6ctgr3evdmqa/aa21/452520554_7943517419102970_5516706601386472407_n.mp4?wrap=0',
-            'https://link.storjshare.io/s/jun2n3vinwhgd2fvcovexsw374ma/aa21/452585163_7463288687110031_4822845128074653211_n.mp4?wrap=0',
-            'https://link.storjshare.io/s/juqujcynepzisgs7zlmfz3wrqoyq/aa21/452599592_7883629641756997_1355872776988172918_n.mp4?wrap=0',
-            'https://link.storjshare.io/s/jvjj3utvxj5aftzgbd5vls4n7aja/aa21/452706264_7991129207637431_1791998040633254119_n.mp4?wrap=0',
-            'https://link.storjshare.io/s/jxhlfxtvderyhb3bnubm3vwspsba/aa21/452746596_7794788257284869_4417751082879239409_n.mp4?wrap=0',
-            'https://link.storjshare.io/s/jxy6b4l26oe2bhdlepzhjebuul6q/aa21/452805259_7722735351185278_488057938890859732_n.mp4?wrap=0',
-            'https://link.storjshare.io/s/jvmuphhkdeoqfzuiyvmguqdbi5ka/aa21/452987480_7999886083398205_6847403393486418412_n.mp4?wrap=0',
-            'https://link.storjshare.io/s/juxldygmz2s3vmo63wm7bcgvcbba/aa21/453053879_8348319005192976_1820923885971360074_n.mp4?wrap=0',
-            'https://link.storjshare.io/s/jurid5ge63j3vtt2wrrtswdnmhsa/aa21/rapidsave.com_if_only-bj9c5lw5d8pd1.mp4?wrap=0',
-            'https://link.storjshare.io/s/juqxtnoh6zrrhm7lb7dz5mkajy3a/aa21/Snapinsta.app_video_22402A6B8A4589DBEFD546FAA451C09A_video_dashinit.mp4?wrap=0',
-            'https://link.storjshare.io/s/jv72nnwbsl57hums7wthn5xnii7q/aa21/Snapinsta.app_video_An8oosun9kS04vKmu9VCQbqOMdNKMw4XhDl8hi2uOZjb-jRHL4tvhwxp-VIki7l1xjSHJMPO7fFvuVhqmHh_3rc.mp4?wrap=0',
-            'https://link.storjshare.io/s/ju2o7x5lskdejcoqqvgvvmbq33ia/aa21/Snapinsta.app_video_C542FFFD4CF9A886D84EDDC1437AE5BE_video_dashinit.mp4?wrap=0',
-
-
         ];
         // Initialize videoList after videoLinks is defined
         videoList = [...videoLinks];
