@@ -209,6 +209,9 @@
 
       const vc = document.getElementById('video-container');
       vc.addEventListener('touchstart', e => {
+        // Ignore touchstart if it originates from interaction buttons
+        if (e.target.closest('.controls')) return;
+
         startX = e.changedTouches[0].clientX;
         currentX = startX;
         isSwiping = true;
@@ -226,15 +229,33 @@
         if (!isSwiping) return;
         const endX = e.changedTouches[0].clientX;
         const deltaX = endX - startX;
+
+        // Only finalize swipe if it exceeds the threshold, otherwise snap back
         finalizeSwipe(deltaX);
         isSwiping = false;
         startX = null;
         currentX = null;
       });
 
-      document.getElementById('share').addEventListener('click', () => {
-        navigator.clipboard.writeText(location.href);
-        alert('Link copied to clipboard');
+      // Prevent pausing when clicking on interaction buttons
+      document.querySelectorAll('.controls button').forEach(button => {
+        button.addEventListener('click', e => e.stopPropagation());
+      });
+
+      document.getElementById('share').addEventListener('click', async () => {
+        const url = location.href;
+        if (navigator.share) {
+          // Use the native share API on mobile devices
+          try {
+            await navigator.share({ title: document.title, url });
+          } catch (err) {
+            console.error('Share failed:', err);
+          }
+        } else {
+          // Fallback to copying the link to the clipboard on PCs
+          navigator.clipboard.writeText(url);
+          alert('Link copied to clipboard');
+        }
       });
     }
 
@@ -284,6 +305,7 @@
       } else {
         // Snap back to original position
         snapBack();
+        currentEl.play(); // Resume playing if swipe snaps back
       }
 
       // Clean up temporary elements
