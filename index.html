@@ -16,7 +16,7 @@
     /* Video grid styles */
     #video-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 10px;
       width: 100%;
       max-width: 900px;
@@ -34,6 +34,7 @@
       transition: transform 0.3s ease;
       height: 28vh; /* Limit height on large screens */
       max-height: 250px;
+      width: 100%; /* Use full width of the grid cell */
     }
     
     .grid-item:hover {
@@ -171,6 +172,25 @@
     #share-play-button .play-icon-large {
       margin-right: 10px;
       font-size: 1.8rem;
+    }
+
+    /* Media query for narrow screens */
+    @media (max-width: 480px) {
+      #video-grid {
+        gap: 8px; /* Smaller gap on very narrow screens */
+      }
+      
+      .grid-item {
+        height: auto; /* Let the aspect ratio control the height */
+        max-height: none; /* Remove max-height restriction */
+      }
+    }
+    
+    /* Extra small screens */
+    @media (max-width: 360px) {
+      #video-grid {
+        gap: 5px; /* Even smaller gap on extra narrow screens */
+      }
     }
   </style>
 </head>
@@ -360,6 +380,8 @@
         videoPreview.loop = true;
         videoPreview.preload = 'metadata';
         videoPreview.playbackRate = 1.5; // Speed up preview
+        videoPreview.style.width = '100%';
+        videoPreview.style.height = '100%';
         
         // Add play icon overlay
         const playIcon = document.createElement('div');
