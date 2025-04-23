@@ -8,10 +8,73 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body, html { width: 100%; height: 100%; overflow: hidden; font-family: sans-serif; }
     #overlay {
-      position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8);
-      display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff;
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000;
+      display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+      color: #fff; overflow: auto; padding: 20px 0;
     }
-    #tutorial { text-align: center; margin-bottom: 2rem; }
+    
+    /* Video grid styles */
+    #video-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      width: 100%;
+      max-width: 900px;
+      padding: 15px;
+      margin: 0 auto;
+    }
+    
+    .grid-item {
+      aspect-ratio: 9/16;
+      position: relative;
+      overflow: hidden;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      cursor: pointer;
+      transition: transform 0.3s ease;
+      height: 28vh; /* Limit height on large screens */
+      max-height: 250px;
+    }
+    
+    .grid-item:hover {
+      transform: scale(1.05);
+    }
+    
+    .grid-item video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    
+    .grid-item .play-icon {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0,0,0,0.5);
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0.7;
+    }
+    
+    .grid-header {
+      width: 100%;
+      max-width: 900px;
+      padding: 10px 15px 20px;
+      text-align: center;
+      margin: 0 auto;
+    }
+    
+    .loading-indicator {
+      text-align: center;
+      padding: 20px;
+      font-size: 1.2rem;
+    }
+
     #arrow { width: 50px; height: 50px; border-left: 5px solid #fff; border-bottom: 5px solid #fff;
       transform: rotate(-45deg); animation: slide 1s infinite alternate; margin: auto; }
     @keyframes slide { from { transform: translateX(-20px) rotate(-45deg);} to { transform: translateX(20px) rotate(-45deg); } }
@@ -43,21 +106,95 @@
 
     .controls { position: absolute; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 1rem; }
     .controls button { background: rgba(255,255,255,0.2); border: none; padding: .75rem; border-radius: 50%; cursor: pointer; backdrop-filter: blur(5px); }
+    
+    /* Play/Pause overlay */
+    #play-pause-overlay {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0,0,0,0.5);
+      border-radius: 50%;
+      width: 80px;
+      height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.3s;
+      z-index: 20;
+    }
+    #play-pause-overlay.visible {
+      opacity: 1;
+    }
+    #play-pause-icon {
+      width: 40px;
+      height: 40px;
+      color: white;
+      font-size: 40px;
+    }
+
+    /* Share link play overlay */
+    #share-play-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.7);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 30;
+    }
+    
+    #share-play-button {
+      padding: 15px 30px;
+      font-size: 1.5rem;
+      background: #1e90ff;
+      color: white;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      transition: transform 0.2s;
+    }
+    
+    #share-play-button:hover {
+      transform: scale(1.05);
+    }
+    
+    #share-play-button .play-icon-large {
+      margin-right: 10px;
+      font-size: 1.8rem;
+    }
   </style>
 </head>
 <body>
   <div id="overlay">
-    <div id="tutorial">
-      <h1>Welcome!</h1>
-      <p>Swipe left/right or use arrow keys to navigate videos.</p>
+    <div class="grid-header">
+      <h1>Select a Video</h1>
     </div>
-    <div id="arrow"></div>
-    <button id="startBtn">Start</button>
+    <div id="loading" class="loading-indicator">Loading videos...</div>
+    <div id="video-grid"></div>
   </div>
 
   <div id="video-container">
     <div id="video-wrapper"></div>
     <div id="progress-container"><div id="progress-bar"></div></div>
+    <div id="play-pause-overlay"  width="100%" height="100%">
+      <div id="play-pause-icon" style="height: 55px;">▶</div>
+    </div>
+    <div id="share-play-overlay" style="display: none;">
+      <button id="share-play-button">
+        <span class="play-icon-large">▶</span> 
+        Play Video
+      </button>
+    </div>
     <div class="controls">
       <button id="heart">❤</button>
       <button id="comment">💬</button>
@@ -67,47 +204,204 @@
 
   <script>
     const textUrl = 'https://raw.githubusercontent.com/ImGGAAVVIINN/ahsiya/refs/heads/main/list';
-    let sourceList = [], prevStack = [], nextQueue = [], current = null;
+    let allSourceList = []; // Full list of all videos
+    let unviewedList = []; // Only videos not viewed
+    let sessionHistory = []; // Videos viewed in this session
+    let prevStack = [], nextQueue = [], current = null;
     let currentEl;
-    const progressBar = document.getElementById('progress-bar'); // will be null until DOM loaded
-
-    document.getElementById('startBtn').addEventListener('click', async () => {
-      document.getElementById('overlay').style.display = 'none';
-      document.getElementById('video-container').style.display = 'block';
-      await loadList();
-      addListeners();
+    let isPlaying = true;
+    const playPauseOverlay = document.getElementById('play-pause-overlay');
+    const playPauseIcon = document.getElementById('play-pause-icon');
+    const videoGrid = document.getElementById('video-grid');
+    const loadingIndicator = document.getElementById('loading');
+    const overlay = document.getElementById('overlay');
+    const videoContainer = document.getElementById('video-container');
+    const sharePlayOverlay = document.getElementById('share-play-overlay');
+    const sharePlayButton = document.getElementById('share-play-button');
+    
+    // On page load, initialize session storage and check for hash
+    if (!sessionStorage.getItem('sessionVideos')) {
+      sessionStorage.setItem('sessionVideos', JSON.stringify([]));
+    }
+    
+    // Check if we have a hash (shared link)
+    const hasShareLink = location.hash && location.hash.length > 1;
+    
+    // Load videos immediately on page load
+    loadList().then(() => {
+      loadingIndicator.style.display = 'none';
+      
+      // If we have a share link, directly play that video
+      if (hasShareLink && current) {
+        startVideoPlayer(current);
+      } else {
+        // Otherwise create the grid
+        createVideoGrid();
+      }
     });
 
     async function loadList() {
       const res = await fetch(textUrl);
       const txt = await res.text();
-      sourceList = txt.split('\n').filter(l => l.trim() && !l.startsWith('//'));
-
-      // Retrieve viewed videos from localStorage
+      allSourceList = txt.split('\n').filter(l => l.trim() && !l.startsWith('//'));
+      
+      // Get previously viewed videos (from localStorage)
       const viewedVideos = JSON.parse(localStorage.getItem('viewedVideos') || '[]');
-
-      // Filter out viewed videos from the source list
-      sourceList = sourceList.filter(video => !viewedVideos.includes(video));
-
+      // Get videos viewed in this session
+      sessionHistory = JSON.parse(sessionStorage.getItem('sessionVideos') || '[]');
+      
+      // Filter out all previously viewed videos
+      unviewedList = allSourceList.filter(video => !viewedVideos.includes(video));
+      
+      // Check if we have a hash link to a specific video
       if(location.hash) {
         const shared = decodeURIComponent(location.hash.slice(1));
-        const idx = sourceList.indexOf(shared);
-        if(idx !== -1) { sourceList.splice(idx,1); current = shared; }
+        const idx = allSourceList.indexOf(shared);
+        if(idx !== -1) {
+          current = shared;
+          // Remove from unviewed if present
+          const unviewedIdx = unviewedList.indexOf(shared);
+          if(unviewedIdx !== -1) {
+            unviewedList.splice(unviewedIdx, 1);
+          }
+        }
       }
+      
+      // If no hash or invalid hash, leave current as null for grid view
+    }
 
-      if(!current) {
-        const i = Math.floor(Math.random()*sourceList.length);
-        current = sourceList.splice(i,1)[0];
+    function startVideoPlayer(videoSrc) {
+      // Hide grid overlay and show video container
+      overlay.style.display = 'none';
+      videoContainer.style.display = 'block';
+      
+      // Set the selected video as current if not already set
+      current = videoSrc;
+      
+      // Prepare the video queue
+      const sourceIndex = allSourceList.indexOf(videoSrc);
+      
+      // Reset navigation stacks
+      prevStack = [];
+      nextQueue = [];
+      
+      // Add videos that come after the selected one to nextQueue
+      for (let i = sourceIndex + 1; i < allSourceList.length; i++) {
+        nextQueue.push(allSourceList[i]);
       }
-      nextQueue = [...sourceList];
-      showInitial(current);
-      updateHash(current);
-
-      // Add the current video to the viewed list
+      
+      // Add videos that come before the selected one to prevStack (in reverse)
+      for (let i = sourceIndex - 1; i >= 0; i--) {
+        prevStack.push(allSourceList[i]);
+      }
+      
+      // Mark video as viewed
       markVideoAsViewed(current);
+      
+      // Set up event listeners for navigation
+      addListeners();
+      
+      // When loading from a share link, we need to show a play button first
+      // to satisfy browser autoplay policies that require user interaction
+      if (hasShareLink) {
+        showSharePlayOverlay();
+      } else {
+        // Normal flow when coming from grid view (user already interacted)
+        showInitial(current);
+        updateHash(current);
+      }
+    }
+    
+    function showSharePlayOverlay() {
+      // Show the special share play overlay
+      sharePlayOverlay.style.display = 'flex';
+      
+      // Add click event to start playing
+      sharePlayButton.addEventListener('click', () => {
+        sharePlayOverlay.style.display = 'none';
+        showInitial(current);
+        updateHash(current);
+      }, { once: true });
+    }
+
+    function createVideoGrid() {
+      // Determine which videos to show (randomized)
+      let gridVideos = [];
+      
+      if (unviewedList.length >= 9) {
+        // If we have enough unviewed videos, randomly select 9 from them
+        const shuffled = [...unviewedList].sort(() => Math.random() - 0.5);
+        gridVideos = shuffled.slice(0, 9);
+      } else {
+        // Use all unviewed videos
+        gridVideos = [...unviewedList];
+        
+        // Fill the rest with random videos from the full list, avoiding duplicates
+        const remainingCount = 9 - unviewedList.length;
+        if (remainingCount > 0) {
+          // Get videos not already in the grid
+          const viewedVideos = allSourceList.filter(v => !unviewedList.includes(v));
+          // Shuffle them
+          const shuffled = [...viewedVideos].sort(() => Math.random() - 0.5);
+          // Add up to the needed amount
+          gridVideos.push(...shuffled.slice(0, remainingCount));
+        }
+      }
+      
+      // Create grid with the randomized selection
+      gridVideos.forEach((videoSrc, index) => {
+        const gridItem = document.createElement('div');
+        gridItem.className = 'grid-item';
+        
+        // Create video element for preview
+        const videoPreview = document.createElement('video');
+        videoPreview.src = videoSrc;
+        videoPreview.muted = true;
+        videoPreview.loop = true;
+        videoPreview.preload = 'metadata';
+        videoPreview.playbackRate = 1.5; // Speed up preview
+        
+        // Add play icon overlay
+        const playIcon = document.createElement('div');
+        playIcon.className = 'play-icon';
+        playIcon.innerHTML = '▶';
+        
+        // Add elements to grid item
+        gridItem.appendChild(videoPreview);
+        gridItem.appendChild(playIcon);
+        
+        // Add click handler
+        gridItem.addEventListener('click', () => {
+          startVideoPlayer(videoSrc);
+        });
+        
+        // Add to grid
+        videoGrid.appendChild(gridItem);
+        
+        // Start playing preview after a delay to avoid overloading browser
+        setTimeout(() => {
+          videoPreview.play().catch(err => console.log('Preview autoplay failed:', err));
+          
+          // Pause other videos on hover to improve performance
+          gridItem.addEventListener('mouseenter', () => {
+            if (videoPreview.paused) videoPreview.play().catch(err => {});
+          });
+          
+          gridItem.addEventListener('mouseleave', () => {
+            if (!videoPreview.paused) videoPreview.pause();
+          });
+        }, index * 200); // Stagger loading
+      });
     }
 
     function markVideoAsViewed(video) {
+      // First update session history
+      if (!sessionHistory.includes(video)) {
+        sessionHistory.push(video);
+        sessionStorage.setItem('sessionVideos', JSON.stringify(sessionHistory));
+      }
+      
+      // Then update persistent storage
       const viewedVideos = JSON.parse(localStorage.getItem('viewedVideos') || '[]');
       if (!viewedVideos.includes(video)) {
         viewedVideos.push(video);
@@ -129,17 +423,25 @@
       }
       vid.addEventListener('timeupdate', () => updateProgress(vid));
       vid.addEventListener('loadedmetadata', () => updateProgress(vid));
-
-      // Add click event listener to toggle play/pause
-      vid.addEventListener('click', () => {
-        if (vid.paused) {
-          vid.play();
-        } else {
-          vid.pause();
-        }
-      });
+      vid.addEventListener('play', () => updatePlayPauseState(true));
+      vid.addEventListener('pause', () => updatePlayPauseState(false));
 
       return vid;
+    }
+
+    function updatePlayPauseState(playing) {
+      isPlaying = playing;
+      playPauseIcon.textContent = isPlaying ? '❚❚' : '▶';
+    }
+
+    function togglePlayPause() {
+      if (currentEl) {
+        if (isPlaying) {
+          currentEl.pause();
+        } else {
+          currentEl.play();
+        }
+      }
     }
 
     function updateProgress(vid) {
@@ -156,23 +458,33 @@
       currentEl.style.transform = 'translateX(0)';
       wrapper.appendChild(currentEl);
 
-      // Preload the next video
-      preloadNextVideo();
+      // Preload videos
+      preloadVideos();
     }
 
-    function preloadNextVideo() {
+    function preloadVideos() {
       const wrapper = document.getElementById('video-wrapper');
       const gapPercent = (40 / window.innerWidth) * 100; // 40px gap in %
 
-      // Remove any existing preloaded video
-      const existingPreload = wrapper.querySelector('.preloaded-next');
-      if (existingPreload) wrapper.removeChild(existingPreload);
+      // Remove any existing preloaded videos
+      const existingPreloads = wrapper.querySelectorAll('.preloaded-video');
+      existingPreloads.forEach(el => wrapper.removeChild(el));
 
-      if (nextQueue.length > 0) {
-        const nextEl = createVideoElement(nextQueue[0], true);
-        nextEl.className += ' preloaded-next';
-        nextEl.style.transform = `translateX(${100 + gapPercent}%)`;
+      // Preload up to 2 next videos
+      for (let i = 0; i < 2 && i < nextQueue.length; i++) {
+        const nextEl = createVideoElement(nextQueue[i], true);
+        nextEl.className = `video-slide preloaded-video preloaded-next-${i+1}`;
+        nextEl.style.transform = `translateX(${(i+1) * (100 + gapPercent)}%)`;
         wrapper.appendChild(nextEl);
+      }
+
+      // Preload up to 2 previous videos
+      for (let i = 0; i < 2 && i < prevStack.length; i++) {
+        const prevIndex = prevStack.length - 1 - i;
+        const prevEl = createVideoElement(prevStack[prevIndex], true);
+        prevEl.className = `video-slide preloaded-video preloaded-prev-${i+1}`;
+        prevEl.style.transform = `translateX(${-(i+1) * (100 + gapPercent)}%)`;
+        wrapper.appendChild(prevEl);
       }
     }
 
@@ -214,6 +526,8 @@
         wrapper.removeChild(currentEl);
         currentEl = nextEl;
         updateHash(current);
+        // Preload new videos after swipe is complete
+        preloadVideos();
       }, { once: true });
     }
 
@@ -223,12 +537,13 @@
       document.addEventListener('keydown', e => {
         if (e.key === 'ArrowRight') swipe('next');
         if (e.key === 'ArrowLeft') swipe('prev');
+        if (e.key === ' ' || e.key === 'k') togglePlayPause(); // Spacebar or K key for play/pause
       });
 
       const vc = document.getElementById('video-container');
       vc.addEventListener('touchstart', e => {
         // Ignore touchstart if it originates from interaction buttons
-        if (e.target.closest('.controls')) return;
+        if (e.target.closest('.controls') || e.target.closest('#play-pause-overlay')) return;
 
         startX = e.changedTouches[0].clientX;
         currentX = startX;
@@ -255,6 +570,22 @@
         currentX = null;
       });
 
+      // Setup play/pause overlay
+      document.getElementById('video-wrapper').addEventListener('click', function(e) {
+        // Don't trigger if clicking on controls
+        if (e.target.closest('.controls') || e.target.id === 'play-pause-overlay' || e.target.id === 'play-pause-icon') return;
+        
+        // Show overlay temporarily
+        showPlayPauseOverlay();
+        togglePlayPause();
+      });
+
+      // Also handle direct clicks on the play/pause overlay
+      playPauseOverlay.addEventListener('click', function(e) {
+        e.stopPropagation();
+        togglePlayPause();
+      });
+
       // Prevent pausing when clicking on interaction buttons
       document.querySelectorAll('.controls button').forEach(button => {
         button.addEventListener('click', e => e.stopPropagation());
@@ -278,6 +609,13 @@
 
       // Add debug sequence detection
       addDebugSequence();
+    }
+
+    function showPlayPauseOverlay() {
+      playPauseOverlay.classList.add('visible');
+      setTimeout(() => {
+        playPauseOverlay.classList.remove('visible');
+      }, 1000);
     }
 
     function addDebugSequence() {
@@ -328,7 +666,9 @@
 
       clearButton.addEventListener('click', () => {
         localStorage.removeItem('viewedVideos');
-        alert('Blocked videos cleared!');
+        sessionStorage.removeItem('sessionVideos');
+        sessionHistory = [];
+        alert('Blocked videos cleared! Reload to see all videos.');
         document.body.removeChild(debugMenu);
       });
 
@@ -364,7 +704,7 @@
       // Handle the next video
       let nextEl = wrapper.querySelector('.next-slide');
       if (!nextEl && deltaX < 0 && nextQueue.length > 0) {
-        nextEl = wrapper.querySelector('.preloaded-next') || createVideoElement(nextQueue[0], true);
+        nextEl = wrapper.querySelector('.preloaded-next-1') || createVideoElement(nextQueue[0], true);
         nextEl.className = 'video-slide next-slide';
         nextEl.style.transform = `translateX(${100 + gapPercent}%)`;
         if (!wrapper.contains(nextEl)) wrapper.appendChild(nextEl);
@@ -376,13 +716,26 @@
       // Handle the previous video
       let prevEl = wrapper.querySelector('.prev-slide');
       if (!prevEl && deltaX > 0 && prevStack.length > 0) {
-        prevEl = createVideoElement(prevStack[prevStack.length - 1], true);
+        prevEl = wrapper.querySelector('.preloaded-prev-1') || createVideoElement(prevStack[prevStack.length - 1], true);
         prevEl.className = 'video-slide prev-slide';
         prevEl.style.transform = `translateX(${-100 - gapPercent}%)`;
-        wrapper.appendChild(prevEl);
+        if (!wrapper.contains(prevEl)) wrapper.appendChild(prevEl);
       }
       if (prevEl) {
         prevEl.style.transform = `translateX(${-100 - gapPercent + offsetPercent}%)`;
+      }
+
+      // Update positions of other preloaded videos
+      for (let i = 2; i <= 2; i++) {
+        const nextPreload = wrapper.querySelector(`.preloaded-next-${i}`);
+        if (nextPreload) {
+          nextPreload.style.transform = `translateX(${(i * (100 + gapPercent)) + offsetPercent}%)`;
+        }
+        
+        const prevPreload = wrapper.querySelector(`.preloaded-prev-${i}`);
+        if (prevPreload) {
+          prevPreload.style.transform = `translateX(${-(i * (100 + gapPercent)) + offsetPercent}%)`;
+        }
       }
     }
 
@@ -396,6 +749,7 @@
         prevStack.push(current);
         current = nextQueue.shift();
         animateSwipeWithTransition(1);
+        markVideoAsViewed(current); // Mark the new video as viewed
       } else if (deltaX > threshold && prevStack.length > 0) {
         // Complete swipe to previous
         nextQueue.unshift(current);
@@ -412,8 +766,8 @@
 
     function animateSwipeWithTransition(dir) {
       const wrapper = document.getElementById('video-wrapper');
-      const nextEl = wrapper.querySelector('.next-slide') || wrapper.querySelector('.preloaded-next');
-      const prevEl = wrapper.querySelector('.prev-slide');
+      const nextEl = wrapper.querySelector('.next-slide') || wrapper.querySelector('.preloaded-next-1');
+      const prevEl = wrapper.querySelector('.prev-slide') || wrapper.querySelector('.preloaded-prev-1');
 
       if (dir === 1 && nextEl) {
         // Animate to next video
@@ -430,7 +784,7 @@
         }, { once: true });
 
         currentEl = nextEl;
-        nextEl.classList.remove('next-slide', 'preloaded-next');
+        nextEl.classList.remove('next-slide', 'preloaded-next-1');
       } else if (dir === -1 && prevEl) {
         // Animate to previous video
         currentEl.style.transition = 'transform 0.2s ease';
@@ -446,13 +800,13 @@
         }, { once: true });
 
         currentEl = prevEl;
-        prevEl.classList.remove('prev-slide');
+        prevEl.classList.remove('prev-slide', 'preloaded-prev-1');
       }
 
       updateHash(current);
 
-      // Preload the next video after completing the swipe
-      preloadNextVideo();
+      // Preload the videos after completing the swipe
+      preloadVideos();
     }
 
     function animateSnapBack() {
@@ -476,7 +830,7 @@
       currentEl.addEventListener('transitionend', () => {
         currentEl.style.transition = '';
         if (nextEl) nextEl.style.transition = '';
-        if (prevEl) prevEl.style.transition = '';
+        if (prevEl) nextEl.style.transition = '';
       }, { once: true });
 
       currentEl.play(); // Resume playing if swipe snaps back
@@ -488,6 +842,8 @@
       if (nextEl) wrapper.removeChild(nextEl);
       const prevEl = wrapper.querySelector('.prev-slide');
       if (prevEl) wrapper.removeChild(prevEl);
+      
+      // We don't remove preloaded videos here, as they'll be handled by preloadVideos
     }
   </script>
 </body>
