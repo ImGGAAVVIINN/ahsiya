@@ -162,7 +162,7 @@
 
     function preloadNextVideo() {
       const wrapper = document.getElementById('video-wrapper');
-      const gapPercent = (50 / window.innerWidth) * 100; // 40px gap in %
+      const gapPercent = (40 / window.innerWidth) * 100; // 40px gap in %
 
       // Remove any existing preloaded video
       const existingPreload = wrapper.querySelector('.preloaded-next');
@@ -198,7 +198,7 @@
     function animateSwipe(dir) {
       const wrapper = document.getElementById('video-wrapper');
       const nextEl = createVideoElement(current);
-      const offsetPercent = (50 / window.innerWidth) * 100; // 40px gap in %
+      const offsetPercent = (40 / window.innerWidth) * 100; // 40px gap in %
       const offset = dir * (100 + offsetPercent);
       nextEl.style.transform = `translateX(${offset}%)`;
       wrapper.appendChild(nextEl);
