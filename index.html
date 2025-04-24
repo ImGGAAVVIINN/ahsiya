@@ -841,12 +841,17 @@
         nextEl.style.transition = 'transform 0.2s ease';
         currentEl.style.transform = `translateX(-100%)`;
         nextEl.style.transform = 'translateX(0)';
-        nextEl.play();
+        
+        // Try to play with robust error handling
+        ensureVideoPlays(nextEl);
 
         // Reset transition after animation
         nextEl.addEventListener('transitionend', () => {
           currentEl.style.transition = '';
           nextEl.style.transition = '';
+          
+          // Try playing again after transition completes (more reliable)
+          ensureVideoPlays(nextEl);
         }, { once: true });
 
         currentEl = nextEl;
@@ -857,12 +862,17 @@
         prevEl.style.transition = 'transform 0.2s ease';
         currentEl.style.transform = `translateX(100%)`;
         prevEl.style.transform = 'translateX(0)';
-        prevEl.play();
+        
+        // Try to play with robust error handling
+        ensureVideoPlays(prevEl);
 
         // Reset transition after animation
         prevEl.addEventListener('transitionend', () => {
           currentEl.style.transition = '';
           prevEl.style.transition = '';
+          
+          // Try playing again after transition completes (more reliable)
+          ensureVideoPlays(prevEl);
         }, { once: true });
 
         currentEl = prevEl;
@@ -873,6 +883,36 @@
 
       // Preload the videos after completing the swipe
       preloadVideos();
+    }
+
+    // Helper function to ensure video plays reliably
+    function ensureVideoPlays(videoElement) {
+      // First attempt to play
+      const playPromise = videoElement.play();
+      
+      // Handle the promise
+      if (playPromise !== undefined) {
+        playPromise.then(() => {
+          // Video started playing successfully
+          console.log('Video playback started successfully');
+        }).catch(error => {
+          console.log('Autoplay prevented:', error);
+          
+          // If autoplay was prevented, try again after a short delay
+          // This can help with mobile browsers that need a moment
+          setTimeout(() => {
+            videoElement.play().catch(err => {
+              console.log('Second play attempt failed:', err);
+              
+              // Show the play overlay as a last resort if autoplay fails
+              if (videoElement === currentEl) {
+                showPlayPauseOverlay();
+                updatePlayPauseState(false);
+              }
+            });
+          }, 200);
+        });
+      }
     }
 
     function animateSnapBack() {
@@ -899,7 +939,8 @@
         if (prevEl) nextEl.style.transition = '';
       }, { once: true });
 
-      currentEl.play(); // Resume playing if swipe snaps back
+      // Try to resume playing with our more robust method
+      ensureVideoPlays(currentEl);
     }
 
     function cleanUpTemporarySlides() {
