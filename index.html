@@ -192,6 +192,45 @@
         gap: 5px; /* Even smaller gap on extra narrow screens */
       }
     }
+
+    /* Like count styles */
+    .like-count {
+      position: absolute;
+      bottom: -25px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.5);
+      color: white;
+      border-radius: 12px;
+      padding: 2px 8px;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    
+    /* Liked state for heart button */
+    .controls button.liked {
+      background: rgba(255,0,127,0.5);
+      color: white;
+    }
+    
+    /* Like count for grid items */
+    .grid-item .like-badge {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(0,0,0,0.5);
+      color: white;
+      border-radius: 12px;
+      padding: 2px 8px;
+      display: flex;
+      align-items: center;
+      font-size: 12px;
+    }
+    
+    .grid-item .like-badge .heart-icon {
+      margin-right: 4px;
+      color: #ff4081;
+    }
   </style>
 </head>
 <body>
@@ -216,7 +255,7 @@
       </button>
     </div>
     <div class="controls">
-      <button id="heart">❤</button>
+      <button id="heart">❤<span id="like-count" class="like-count"></span></button>
       <button id="comment">💬</button>
       <button id="share">⤴</button>
     </div>
@@ -224,12 +263,21 @@
 
   <script>
     const textUrl = 'https://raw.githubusercontent.com/ImGGAAVVIINN/ahsiya/refs/heads/main/list';
+    const likesUrl = 'https://raw.githubusercontent.com/ImGGAAVVIINN/ahsiya/refs/heads/main/likes.json';
     let allSourceList = []; // Full list of all videos
     let unviewedList = []; // Only videos not viewed
     let sessionHistory = []; // Videos viewed in this session
     let prevStack = [], nextQueue = [], current = null;
     let currentEl;
     let isPlaying = true;
+    // Map objects for URL shortening
+    let urlToIdMap = {};
+    let idToUrlMap = {};
+    // Likes data
+    let userLikes = {}; // User's personal likes
+    let globalLikes = {}; // Global likes from GitHub
+    const heartButton = document.getElementById('heart');
+    const likeCountElement = document.getElementById('like-count');
     const playPauseOverlay = document.getElementById('play-pause-overlay');
     const playPauseIcon = document.getElementById('play-pause-icon');
     const videoGrid = document.getElementById('video-grid');
@@ -247,23 +295,27 @@
     // Check if we have a hash (shared link)
     const hasShareLink = location.hash && location.hash.length > 1;
     
-    // Load videos immediately on page load
-    loadList().then(() => {
-      loadingIndicator.style.display = 'none';
-      
-      // If we have a share link, directly play that video
-      if (hasShareLink && current) {
-        startVideoPlayer(current);
-      } else {
-        // Otherwise create the grid
-        createVideoGrid();
-      }
-    });
+    // Load videos and likes data on page load
+    Promise.all([loadList(), loadLikesData()])
+      .then(() => {
+        loadingIndicator.style.display = 'none';
+        
+        // If we have a share link, directly play that video
+        if (hasShareLink && current) {
+          startVideoPlayer(current);
+        } else {
+          // Otherwise create the grid
+          createVideoGrid();
+        }
+      });
 
     async function loadList() {
       const res = await fetch(textUrl);
       const txt = await res.text();
       allSourceList = txt.split('\n').filter(l => l.trim() && !l.startsWith('//'));
+      
+      // Create short ID mappings for all videos
+      createShortIdMappings(allSourceList);
       
       // Get previously viewed videos (from localStorage)
       const viewedVideos = JSON.parse(localStorage.getItem('viewedVideos') || '[]');
@@ -275,12 +327,13 @@
       
       // Check if we have a hash link to a specific video
       if(location.hash) {
-        const shared = decodeURIComponent(location.hash.slice(1));
-        const idx = allSourceList.indexOf(shared);
-        if(idx !== -1) {
-          current = shared;
+        const shortId = decodeURIComponent(location.hash.slice(1));
+        const videoUrl = idToUrlMap[shortId];
+        
+        if(videoUrl && allSourceList.includes(videoUrl)) {
+          current = videoUrl;
           // Remove from unviewed if present
-          const unviewedIdx = unviewedList.indexOf(shared);
+          const unviewedIdx = unviewedList.indexOf(videoUrl);
           if(unviewedIdx !== -1) {
             unviewedList.splice(unviewedIdx, 1);
           }
@@ -290,6 +343,69 @@
       // If no hash or invalid hash, leave current as null for grid view
     }
 
+    // Create short IDs for all video URLs
+    function createShortIdMappings(videoList) {
+      urlToIdMap = {};
+      idToUrlMap = {};
+      
+      videoList.forEach((url, index) => {
+        const shortId = generateShortId(url, index);
+        urlToIdMap[url] = shortId;
+        idToUrlMap[shortId] = url;
+      });
+    }
+    
+    // Generate a short, unique ID for a video URL
+    function generateShortId(url, index) {
+      // Use a simple hash function based on the URL
+      let hash = 0;
+      for (let i = 0; i < url.length; i++) {
+        const char = url.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash; // Convert to 32bit integer
+      }
+      
+      // Make it positive and combine with index for uniqueness
+      hash = Math.abs(hash) + index;
+      
+      // Convert to base36 for shorter string representation
+      return hash.toString(36);
+    }
+
+    async function loadLikesData() {
+      // Load user likes from localStorage
+      userLikes = JSON.parse(localStorage.getItem('videoLikes') || '{}');
+      
+      try {
+        // Try to fetch global likes data from GitHub
+        const res = await fetch(likesUrl);
+        if (res.ok) {
+          globalLikes = await res.json();
+        } else {
+          console.log('No global likes data available, using only local data');
+          globalLikes = {};
+        }
+      } catch (error) {
+        console.log('Error fetching global likes:', error);
+        globalLikes = {};
+      }
+    }
+    
+    function getVideosWithLikes() {
+      // Combine global and user likes for recommendation purposes
+      const combinedLikes = { ...globalLikes };
+      
+      // Add user likes to the combined data
+      for (const [url, liked] of Object.entries(userLikes)) {
+        if (liked) {
+          const id = urlToIdMap[url] || generateShortId(url, allSourceList.indexOf(url));
+          combinedLikes[id] = (combinedLikes[id] || 0) + 1;
+        }
+      }
+      
+      return combinedLikes;
+    }
+    
     function startVideoPlayer(videoSrc) {
       // Hide grid overlay and show video container
       overlay.style.display = 'none';
@@ -297,6 +413,9 @@
       
       // Set the selected video as current if not already set
       current = videoSrc;
+      
+      // Update heart button to show current like state
+      updateLikeButtonState();
       
       // Prepare the video queue
       const sourceIndex = allSourceList.indexOf(videoSrc);
@@ -343,22 +462,36 @@
     }
 
     function createVideoGrid() {
-      // Determine which videos to show (randomized)
+      // Determine which videos to show (prioritizing liked and unviewed)
       let gridVideos = [];
+      const combinedLikes = getVideosWithLikes();
       
-      if (unviewedList.length >= 9) {
-        // If we have enough unviewed videos, randomly select 9 from them
-        const shuffled = [...unviewedList].sort(() => Math.random() - 0.5);
-        gridVideos = shuffled.slice(0, 9);
+      // First, add up to 3 most liked videos that haven't been viewed recently
+      const likedVideosArray = Object.entries(combinedLikes)
+        .sort((a, b) => b[1] - a[1]) // Sort by like count, highest first
+        .map(([id]) => idToUrlMap[id])
+        .filter(url => url && allSourceList.includes(url) && !sessionHistory.includes(url));
+      
+      const topLikedVideos = likedVideosArray.slice(0, 3);
+      gridVideos.push(...topLikedVideos);
+      
+      // Then fill the rest with unviewed, then random videos
+      if (unviewedList.length >= (9 - topLikedVideos.length)) {
+        // If we have enough unviewed videos, randomly select from them
+        const shuffled = [...unviewedList].filter(v => !gridVideos.includes(v))
+          .sort(() => Math.random() - 0.5);
+        gridVideos.push(...shuffled.slice(0, 9 - gridVideos.length));
       } else {
-        // Use all unviewed videos
-        gridVideos = [...unviewedList];
+        // Use all unviewed videos that aren't already in the grid
+        const remainingUnviewed = [...unviewedList].filter(v => !gridVideos.includes(v));
+        gridVideos.push(...remainingUnviewed);
         
         // Fill the rest with random videos from the full list, avoiding duplicates
-        const remainingCount = 9 - unviewedList.length;
+        const remainingCount = 9 - gridVideos.length;
         if (remainingCount > 0) {
           // Get videos not already in the grid
-          const viewedVideos = allSourceList.filter(v => !unviewedList.includes(v));
+          const viewedVideos = allSourceList.filter(v => 
+            !unviewedList.includes(v) && !gridVideos.includes(v));
           // Shuffle them
           const shuffled = [...viewedVideos].sort(() => Math.random() - 0.5);
           // Add up to the needed amount
@@ -366,7 +499,7 @@
         }
       }
       
-      // Create grid with the randomized selection
+      // Create grid with the selected videos
       gridVideos.forEach((videoSrc, index) => {
         const gridItem = document.createElement('div');
         gridItem.className = 'grid-item';
@@ -389,6 +522,17 @@
         // Add elements to grid item
         gridItem.appendChild(videoPreview);
         gridItem.appendChild(playIcon);
+        
+        // Add like badge if this video has likes
+        const videoId = urlToIdMap[videoSrc] || generateShortId(videoSrc, allSourceList.indexOf(videoSrc));
+        const likeCount = combinedLikes[videoId] || 0;
+        
+        if (likeCount > 0) {
+          const likeBadge = document.createElement('div');
+          likeBadge.className = 'like-badge';
+          likeBadge.innerHTML = `<span class="heart-icon">❤</span> ${likeCount}`;
+          gridItem.appendChild(likeBadge);
+        }
         
         // Add click handler
         gridItem.addEventListener('click', () => {
@@ -509,7 +653,9 @@
     }
 
     function updateHash(src) {
-      history.replaceState(null, '', '#'+encodeURIComponent(src));
+      // Use the short ID instead of the full URL
+      const shortId = urlToIdMap[src] || generateShortId(src, allSourceList.indexOf(src));
+      history.replaceState(null, '', '#' + shortId);
     }
 
     function isFirstVideo(videoSrc) {
@@ -641,6 +787,12 @@
         }
       });
 
+      // Handle heart button click for liking videos
+      document.getElementById('heart').addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleLike();
+      });
+
       // Add debug sequence detection
       addDebugSequence();
     }
@@ -686,7 +838,7 @@
       debugMenu.style.zIndex = '1000';
 
       const message = document.createElement('p');
-      message.textContent = 'Debug Menu: Clear Blocked Videos?';
+      message.textContent = 'Debug Menu';
 
       const clearButton = document.createElement('button');
       clearButton.textContent = 'Clear Blocked Videos';
@@ -698,12 +850,37 @@
       clearButton.style.borderRadius = '0.5rem';
       clearButton.style.cursor = 'pointer';
 
+      const exportLikesButton = document.createElement('button');
+      exportLikesButton.textContent = 'Export Likes Data';
+      exportLikesButton.style.marginTop = '1rem';
+      exportLikesButton.style.padding = '0.5rem 1rem';
+      exportLikesButton.style.marginRight = '1rem';
+      exportLikesButton.style.background = '#1e90ff';
+      exportLikesButton.style.color = '#fff';
+      exportLikesButton.style.border = 'none';
+      exportLikesButton.style.borderRadius = '0.5rem';
+      exportLikesButton.style.cursor = 'pointer';
+
       clearButton.addEventListener('click', () => {
         localStorage.removeItem('viewedVideos');
         sessionStorage.removeItem('sessionVideos');
         sessionHistory = [];
         alert('Blocked videos cleared! Reload to see all videos.');
         document.body.removeChild(debugMenu);
+      });
+
+      exportLikesButton.addEventListener('click', () => {
+        const contributionData = localStorage.getItem('contributionData') || '{}';
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(contributionData);
+        
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute("href", dataStr);
+        downloadAnchor.setAttribute("download", "likes-contribution.json");
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        document.body.removeChild(downloadAnchor);
+        
+        alert('Likes data exported! You can contribute this file to improve recommendations for everyone.');
       });
 
       const closeButton = document.createElement('button');
@@ -722,7 +899,8 @@
       });
 
       debugMenu.appendChild(message);
-      debugMenu.appendChild(clearButton);
+      debugMenu.appendChild(document.createElement('div')).appendChild(exportLikesButton);
+      debugMenu.appendChild(document.createElement('div')).appendChild(clearButton);
       debugMenu.appendChild(closeButton);
       document.body.appendChild(debugMenu);
     }
@@ -951,6 +1129,70 @@
       if (prevEl) wrapper.removeChild(prevEl);
       
       // We don't remove preloaded videos here, as they'll be handled by preloadVideos
+    }
+
+    function updateLikeButtonState() {
+      // Update heart button state based on if the video is liked
+      const isLiked = userLikes[current] === true;
+      
+      if (isLiked) {
+        heartButton.classList.add('liked');
+      } else {
+        heartButton.classList.remove('liked');
+      }
+      
+      // Update like count
+      updateLikeCount();
+    }
+    
+    function updateLikeCount() {
+      if (!current) return;
+      
+      const videoId = urlToIdMap[current] || generateShortId(current, allSourceList.indexOf(current));
+      let totalLikes = (globalLikes[videoId] || 0);
+      
+      // Add user's like if they've liked it
+      if (userLikes[current] === true) {
+        totalLikes += 1;
+      }
+      
+      if (totalLikes > 0) {
+        likeCountElement.textContent = totalLikes;
+        likeCountElement.style.display = 'inline';
+      } else {
+        likeCountElement.style.display = 'none';
+      }
+    }
+    
+    function toggleLike() {
+      if (!current) return;
+      
+      // Toggle like state
+      userLikes[current] = !userLikes[current];
+      
+      // Save to localStorage
+      localStorage.setItem('videoLikes', JSON.stringify(userLikes));
+      
+      // Update UI
+      updateLikeButtonState();
+      
+      // Generate data for potential contribution
+      generateLikeContribution();
+    }
+    
+    function generateLikeContribution() {
+      // Create a data structure that could be contributed back to the repository
+      const contribution = {};
+      
+      for (const [url, liked] of Object.entries(userLikes)) {
+        if (liked) {
+          const id = urlToIdMap[url] || generateShortId(url, allSourceList.indexOf(url));
+          contribution[id] = 1; // Each user contributes 1 like per video
+        }
+      }
+      
+      // Store the contribution data for later use
+      localStorage.setItem('contributionData', JSON.stringify(contribution));
     }
   </script>
 </body>
