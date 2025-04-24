@@ -193,43 +193,121 @@
       }
     }
 
-    /* Like count styles */
-    .like-count {
+    /* Comment overlay styles */
+    #comment-overlay {
       position: absolute;
-      bottom: -25px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(0,0,0,0.5);
-      color: white;
-      border-radius: 12px;
-      padding: 2px 8px;
-      font-size: 12px;
-      white-space: nowrap;
-    }
-    
-    /* Liked state for heart button */
-    .controls button.liked {
-      background: rgba(255,0,127,0.5);
-      color: white;
-    }
-    
-    /* Like count for grid items */
-    .grid-item .like-badge {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background: rgba(0,0,0,0.5);
-      color: white;
-      border-radius: 12px;
-      padding: 2px 8px;
-      display: flex;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.9);
+      display: none;
+      flex-direction: column;
       align-items: center;
-      font-size: 12px;
+      z-index: 40;
+      color: #fff;
     }
     
-    .grid-item .like-badge .heart-icon {
-      margin-right: 4px;
-      color: #ff4081;
+    .comment-header {
+      width: 100%;
+      padding: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .comment-header h2 {
+      font-size: 1.2rem;
+    }
+    
+    .close-comments {
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 1.5rem;
+      cursor: pointer;
+    }
+    
+    .comments-container {
+      width: 100%;
+      max-width: 600px;
+      flex: 1;
+      overflow-y: auto;
+      padding: 15px;
+    }
+    
+    .comment {
+      margin-bottom: 15px;
+      padding: 12px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 8px;
+    }
+    
+    .comment-author {
+      font-weight: bold;
+      margin-bottom: 5px;
+      color: #1e90ff;
+    }
+    
+    .comment-form {
+      width: 100%;
+      max-width: 600px;
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .comment-input {
+      padding: 12px;
+      border-radius: 8px;
+      border: none;
+      background: rgba(255,255,255,0.1);
+      color: white;
+      resize: none;
+    }
+    
+    .comment-submit {
+      padding: 12px;
+      border-radius: 8px;
+      border: none;
+      background: #1e90ff;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    
+    .comment-submit:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .no-comments {
+      text-align: center;
+      padding: 30px;
+      color: rgba(255,255,255,0.5);
+    }
+    
+    /* Loading animation for comments */
+    .loading-comments {
+      text-align: center;
+      padding: 30px;
+    }
+    
+    .loading-spinner {
+      display: inline-block;
+      width: 30px;
+      height: 30px;
+      border: 3px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 1s ease-in-out infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
     }
   </style>
 </head>
@@ -255,15 +333,31 @@
       </button>
     </div>
     <div class="controls">
-      <button id="heart">❤<span id="like-count" class="like-count"></span></button>
+      <button id="heart">❤</button>
       <button id="comment">💬</button>
       <button id="share">⤴</button>
+    </div>
+    
+    <!-- Comment overlay -->
+    <div id="comment-overlay">
+      <div class="comment-header">
+        <h2>Comments</h2>
+        <button class="close-comments">&times;</button>
+      </div>
+      <div class="comments-container">
+        <div class="loading-comments">
+          <div class="loading-spinner"></div>
+        </div>
+      </div>
+      <form class="comment-form">
+        <textarea class="comment-input" placeholder="Add a comment..." rows="3"></textarea>
+        <button type="submit" class="comment-submit">Post Comment</button>
+      </form>
     </div>
   </div>
 
   <script>
     const textUrl = 'https://raw.githubusercontent.com/ImGGAAVVIINN/ahsiya/refs/heads/main/list';
-    const likesUrl = 'https://raw.githubusercontent.com/ImGGAAVVIINN/ahsiya/refs/heads/main/likes.json';
     let allSourceList = []; // Full list of all videos
     let unviewedList = []; // Only videos not viewed
     let sessionHistory = []; // Videos viewed in this session
@@ -273,11 +367,6 @@
     // Map objects for URL shortening
     let urlToIdMap = {};
     let idToUrlMap = {};
-    // Likes data
-    let userLikes = {}; // User's personal likes
-    let globalLikes = {}; // Global likes from GitHub
-    const heartButton = document.getElementById('heart');
-    const likeCountElement = document.getElementById('like-count');
     const playPauseOverlay = document.getElementById('play-pause-overlay');
     const playPauseIcon = document.getElementById('play-pause-icon');
     const videoGrid = document.getElementById('video-grid');
@@ -295,19 +384,18 @@
     // Check if we have a hash (shared link)
     const hasShareLink = location.hash && location.hash.length > 1;
     
-    // Load videos and likes data on page load
-    Promise.all([loadList(), loadLikesData()])
-      .then(() => {
-        loadingIndicator.style.display = 'none';
-        
-        // If we have a share link, directly play that video
-        if (hasShareLink && current) {
-          startVideoPlayer(current);
-        } else {
-          // Otherwise create the grid
-          createVideoGrid();
-        }
-      });
+    // Load videos immediately on page load
+    loadList().then(() => {
+      loadingIndicator.style.display = 'none';
+      
+      // If we have a share link, directly play that video
+      if (hasShareLink && current) {
+        startVideoPlayer(current);
+      } else {
+        // Otherwise create the grid
+        createVideoGrid();
+      }
+    });
 
     async function loadList() {
       const res = await fetch(textUrl);
@@ -372,40 +460,6 @@
       return hash.toString(36);
     }
 
-    async function loadLikesData() {
-      // Load user likes from localStorage
-      userLikes = JSON.parse(localStorage.getItem('videoLikes') || '{}');
-      
-      try {
-        // Try to fetch global likes data from GitHub
-        const res = await fetch(likesUrl);
-        if (res.ok) {
-          globalLikes = await res.json();
-        } else {
-          console.log('No global likes data available, using only local data');
-          globalLikes = {};
-        }
-      } catch (error) {
-        console.log('Error fetching global likes:', error);
-        globalLikes = {};
-      }
-    }
-    
-    function getVideosWithLikes() {
-      // Combine global and user likes for recommendation purposes
-      const combinedLikes = { ...globalLikes };
-      
-      // Add user likes to the combined data
-      for (const [url, liked] of Object.entries(userLikes)) {
-        if (liked) {
-          const id = urlToIdMap[url] || generateShortId(url, allSourceList.indexOf(url));
-          combinedLikes[id] = (combinedLikes[id] || 0) + 1;
-        }
-      }
-      
-      return combinedLikes;
-    }
-    
     function startVideoPlayer(videoSrc) {
       // Hide grid overlay and show video container
       overlay.style.display = 'none';
@@ -413,9 +467,6 @@
       
       // Set the selected video as current if not already set
       current = videoSrc;
-      
-      // Update heart button to show current like state
-      updateLikeButtonState();
       
       // Prepare the video queue
       const sourceIndex = allSourceList.indexOf(videoSrc);
@@ -462,36 +513,22 @@
     }
 
     function createVideoGrid() {
-      // Determine which videos to show (prioritizing liked and unviewed)
+      // Determine which videos to show (randomized)
       let gridVideos = [];
-      const combinedLikes = getVideosWithLikes();
       
-      // First, add up to 3 most liked videos that haven't been viewed recently
-      const likedVideosArray = Object.entries(combinedLikes)
-        .sort((a, b) => b[1] - a[1]) // Sort by like count, highest first
-        .map(([id]) => idToUrlMap[id])
-        .filter(url => url && allSourceList.includes(url) && !sessionHistory.includes(url));
-      
-      const topLikedVideos = likedVideosArray.slice(0, 3);
-      gridVideos.push(...topLikedVideos);
-      
-      // Then fill the rest with unviewed, then random videos
-      if (unviewedList.length >= (9 - topLikedVideos.length)) {
-        // If we have enough unviewed videos, randomly select from them
-        const shuffled = [...unviewedList].filter(v => !gridVideos.includes(v))
-          .sort(() => Math.random() - 0.5);
-        gridVideos.push(...shuffled.slice(0, 9 - gridVideos.length));
+      if (unviewedList.length >= 9) {
+        // If we have enough unviewed videos, randomly select 9 from them
+        const shuffled = [...unviewedList].sort(() => Math.random() - 0.5);
+        gridVideos = shuffled.slice(0, 9);
       } else {
-        // Use all unviewed videos that aren't already in the grid
-        const remainingUnviewed = [...unviewedList].filter(v => !gridVideos.includes(v));
-        gridVideos.push(...remainingUnviewed);
+        // Use all unviewed videos
+        gridVideos = [...unviewedList];
         
         // Fill the rest with random videos from the full list, avoiding duplicates
-        const remainingCount = 9 - gridVideos.length;
+        const remainingCount = 9 - unviewedList.length;
         if (remainingCount > 0) {
           // Get videos not already in the grid
-          const viewedVideos = allSourceList.filter(v => 
-            !unviewedList.includes(v) && !gridVideos.includes(v));
+          const viewedVideos = allSourceList.filter(v => !unviewedList.includes(v));
           // Shuffle them
           const shuffled = [...viewedVideos].sort(() => Math.random() - 0.5);
           // Add up to the needed amount
@@ -499,7 +536,7 @@
         }
       }
       
-      // Create grid with the selected videos
+      // Create grid with the randomized selection
       gridVideos.forEach((videoSrc, index) => {
         const gridItem = document.createElement('div');
         gridItem.className = 'grid-item';
@@ -522,17 +559,6 @@
         // Add elements to grid item
         gridItem.appendChild(videoPreview);
         gridItem.appendChild(playIcon);
-        
-        // Add like badge if this video has likes
-        const videoId = urlToIdMap[videoSrc] || generateShortId(videoSrc, allSourceList.indexOf(videoSrc));
-        const likeCount = combinedLikes[videoId] || 0;
-        
-        if (likeCount > 0) {
-          const likeBadge = document.createElement('div');
-          likeBadge.className = 'like-badge';
-          likeBadge.innerHTML = `<span class="heart-icon">❤</span> ${likeCount}`;
-          gridItem.appendChild(likeBadge);
-        }
         
         // Add click handler
         gridItem.addEventListener('click', () => {
@@ -787,14 +813,26 @@
         }
       });
 
-      // Handle heart button click for liking videos
-      document.getElementById('heart').addEventListener('click', (e) => {
-        e.stopPropagation();
-        toggleLike();
-      });
-
       // Add debug sequence detection
       addDebugSequence();
+
+      // Comment button click event
+      document.getElementById('comment').addEventListener('click', e => {
+        e.stopPropagation();
+        showComments();
+      });
+      
+      // Close comments button click event
+      closeCommentsBtn.addEventListener('click', () => {
+        hideComments();
+      });
+      
+      // Comment form submission
+      commentForm.addEventListener('submit', e => {
+        e.preventDefault();
+        const content = commentInput.value;
+        postComment(content);
+      });
     }
 
     function showPlayPauseOverlay() {
@@ -838,7 +876,7 @@
       debugMenu.style.zIndex = '1000';
 
       const message = document.createElement('p');
-      message.textContent = 'Debug Menu';
+      message.textContent = 'Debug Menu: Clear Blocked Videos?';
 
       const clearButton = document.createElement('button');
       clearButton.textContent = 'Clear Blocked Videos';
@@ -850,37 +888,12 @@
       clearButton.style.borderRadius = '0.5rem';
       clearButton.style.cursor = 'pointer';
 
-      const exportLikesButton = document.createElement('button');
-      exportLikesButton.textContent = 'Export Likes Data';
-      exportLikesButton.style.marginTop = '1rem';
-      exportLikesButton.style.padding = '0.5rem 1rem';
-      exportLikesButton.style.marginRight = '1rem';
-      exportLikesButton.style.background = '#1e90ff';
-      exportLikesButton.style.color = '#fff';
-      exportLikesButton.style.border = 'none';
-      exportLikesButton.style.borderRadius = '0.5rem';
-      exportLikesButton.style.cursor = 'pointer';
-
       clearButton.addEventListener('click', () => {
         localStorage.removeItem('viewedVideos');
         sessionStorage.removeItem('sessionVideos');
         sessionHistory = [];
         alert('Blocked videos cleared! Reload to see all videos.');
         document.body.removeChild(debugMenu);
-      });
-
-      exportLikesButton.addEventListener('click', () => {
-        const contributionData = localStorage.getItem('contributionData') || '{}';
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(contributionData);
-        
-        const downloadAnchor = document.createElement('a');
-        downloadAnchor.setAttribute("href", dataStr);
-        downloadAnchor.setAttribute("download", "likes-contribution.json");
-        document.body.appendChild(downloadAnchor);
-        downloadAnchor.click();
-        document.body.removeChild(downloadAnchor);
-        
-        alert('Likes data exported! You can contribute this file to improve recommendations for everyone.');
       });
 
       const closeButton = document.createElement('button');
@@ -899,8 +912,7 @@
       });
 
       debugMenu.appendChild(message);
-      debugMenu.appendChild(document.createElement('div')).appendChild(exportLikesButton);
-      debugMenu.appendChild(document.createElement('div')).appendChild(clearButton);
+      debugMenu.appendChild(clearButton);
       debugMenu.appendChild(closeButton);
       document.body.appendChild(debugMenu);
     }
@@ -1131,68 +1143,147 @@
       // We don't remove preloaded videos here, as they'll be handled by preloadVideos
     }
 
-    function updateLikeButtonState() {
-      // Update heart button state based on if the video is liked
-      const isLiked = userLikes[current] === true;
+    // Comments functionality
+    const commentOverlay = document.getElementById('comment-overlay');
+    const commentsContainer = document.querySelector('.comments-container');
+    const commentForm = document.querySelector('.comment-form');
+    const commentInput = document.querySelector('.comment-input');
+    const commentSubmitBtn = document.querySelector('.comment-submit');
+    const closeCommentsBtn = document.querySelector('.close-comments');
+    
+    // Store the username to use for comments
+    let commentUsername = localStorage.getItem('commentUsername') || generateUsername();
+    
+    // Generate a random username if none exists
+    function generateUsername() {
+      const adjectives = ['Happy', 'Clever', 'Swift', 'Bright', 'Gentle', 'Brave', 'Calm'];
+      const nouns = ['Panda', 'Tiger', 'Eagle', 'Dolphin', 'Fox', 'Wolf', 'Bear'];
       
-      if (isLiked) {
-        heartButton.classList.add('liked');
-      } else {
-        heartButton.classList.remove('liked');
-      }
+      const randomAdj = adjectives[Math.floor(Math.random() * adjectives.length)];
+      const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
+      const randomNum = Math.floor(Math.random() * 1000);
       
-      // Update like count
-      updateLikeCount();
+      const username = `${randomAdj}${randomNoun}${randomNum}`;
+      localStorage.setItem('commentUsername', username);
+      return username;
     }
     
-    function updateLikeCount() {
+    // Show comment overlay and load comments
+    function showComments() {
       if (!current) return;
       
-      const videoId = urlToIdMap[current] || generateShortId(current, allSourceList.indexOf(current));
-      let totalLikes = (globalLikes[videoId] || 0);
-      
-      // Add user's like if they've liked it
-      if (userLikes[current] === true) {
-        totalLikes += 1;
-      }
-      
-      if (totalLikes > 0) {
-        likeCountElement.textContent = totalLikes;
-        likeCountElement.style.display = 'inline';
-      } else {
-        likeCountElement.style.display = 'none';
-      }
+      commentOverlay.style.display = 'flex';
+      loadComments();
     }
     
-    function toggleLike() {
+    // Hide comment overlay
+    function hideComments() {
+      commentOverlay.style.display = 'none';
+    }
+    
+    // Load comments for the current video
+    function loadComments() {
       if (!current) return;
       
-      // Toggle like state
-      userLikes[current] = !userLikes[current];
+      // Show loading state
+      commentsContainer.innerHTML = `
+        <div class="loading-comments">
+          <div class="loading-spinner"></div>
+        </div>
+      `;
       
-      // Save to localStorage
-      localStorage.setItem('videoLikes', JSON.stringify(userLikes));
-      
-      // Update UI
-      updateLikeButtonState();
-      
-      // Generate data for potential contribution
-      generateLikeContribution();
+      // Load comments from API
+      fetch(`http://192.168.31.184:3000/api/comments?videoUrl=${encodeURIComponent(current)}`)
+        .then(res => res.json())
+        .then(comments => {
+          if (comments.length === 0) {
+            commentsContainer.innerHTML = `
+              <div class="no-comments">
+                <p>No comments yet. Be the first to comment!</p>
+              </div>
+            `;
+          } else {
+            renderComments(comments);
+          }
+        })
+        .catch(error => {
+          console.error('Error loading comments:', error);
+          commentsContainer.innerHTML = `
+            <div class="no-comments">
+              <p>Failed to load comments. Please try again later.</p>
+            </div>
+          `;
+        });
     }
     
-    function generateLikeContribution() {
-      // Create a data structure that could be contributed back to the repository
-      const contribution = {};
+    // Render comments to the comments container
+    function renderComments(comments) {
+      commentsContainer.innerHTML = '';
       
-      for (const [url, liked] of Object.entries(userLikes)) {
-        if (liked) {
-          const id = urlToIdMap[url] || generateShortId(url, allSourceList.indexOf(url));
-          contribution[id] = 1; // Each user contributes 1 like per video
-        }
-      }
+      comments.forEach(comment => {
+        const commentElement = document.createElement('div');
+        commentElement.className = 'comment';
+        commentElement.innerHTML = `
+          <div class="comment-author">${escapeHtml(comment.author)}</div>
+          <div class="comment-content">${escapeHtml(comment.content)}</div>
+        `;
+        commentsContainer.appendChild(commentElement);
+      });
       
-      // Store the contribution data for later use
-      localStorage.setItem('contributionData', JSON.stringify(contribution));
+      // Scroll to the bottom to show newest comments
+      commentsContainer.scrollTop = commentsContainer.scrollHeight;
+    }
+    
+    // Helper function to escape HTML to prevent XSS
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+    
+    // Post a new comment
+    function postComment(content) {
+      if (!content.trim() || !current) return;
+      
+      // Disable form while posting
+      commentInput.disabled = true;
+      commentSubmitBtn.disabled = true;
+      
+      fetch('http://192.168.31.184:3000/api/comments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          videoUrl: current,
+          author: commentUsername,
+          content: content
+        })
+      })
+      .then(res => res.json())
+      .then(comment => {
+        // Add the new comment to the UI
+        const commentElement = document.createElement('div');
+        commentElement.className = 'comment';
+        commentElement.innerHTML = `
+          <div class="comment-author">${escapeHtml(comment.author)}</div>
+          <div class="comment-content">${escapeHtml(comment.content)}</div>
+        `;
+        commentsContainer.appendChild(commentElement);
+        
+        // Scroll to show the new comment
+        commentsContainer.scrollTop = commentsContainer.scrollHeight;
+        
+        // Clear the input field
+        commentInput.value = '';
+      })
+      .catch(error => {
+        console.error('Error posting comment:', error);
+        alert('Failed to post comment. Please try again.');
+      })
+      .finally(() => {
+        // Re-enable form
+        commentInput.disabled = false;
+        commentSubmitBtn.disabled = false;
+      });
     }
   </script>
 </body>
