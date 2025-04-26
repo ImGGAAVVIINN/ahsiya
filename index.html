@@ -401,23 +401,23 @@
       const res = await fetch(textUrl);
       const txt = await res.text();
       allSourceList = txt.split('\n').filter(l => l.trim() && !l.startsWith('//'));
-      
+
       // Create short ID mappings for all videos
       createShortIdMappings(allSourceList);
-      
+
       // Get previously viewed videos (from localStorage)
       const viewedVideos = JSON.parse(localStorage.getItem('viewedVideos') || '[]');
       // Get videos viewed in this session
       sessionHistory = JSON.parse(sessionStorage.getItem('sessionVideos') || '[]');
-      
+
       // Filter out all previously viewed videos
       unviewedList = allSourceList.filter(video => !viewedVideos.includes(video));
-      
+
       // Check if we have a hash link to a specific video
       if(location.hash) {
         const shortId = decodeURIComponent(location.hash.slice(1));
         const videoUrl = idToUrlMap[shortId];
-        
+
         if(videoUrl && allSourceList.includes(videoUrl)) {
           current = videoUrl;
           // Remove from unviewed if present
@@ -427,7 +427,7 @@
           }
         }
       }
-      
+
       // If no hash or invalid hash, leave current as null for grid view
     }
 
@@ -468,17 +468,19 @@
       // Set the selected video as current if not already set
       current = videoSrc;
       
-      // Prepare the video queue
-      const sourceIndex = allSourceList.indexOf(videoSrc);
-      
-      // Reset navigation stacks
       prevStack = [];
       nextQueue = [];
-      
-      // Add videos that come after the selected one to nextQueue
-      for (let i = sourceIndex + 1; i < allSourceList.length; i++) {
-        nextQueue.push(allSourceList[i]);
+
+      const availableVideos = unviewedList.filter(v => v !== videoSrc);
+
+      // Shuffle available videos
+      for (let i = availableVideos.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [availableVideos[i], availableVideos[j]] = [availableVideos[j], availableVideos[i]];
       }
+
+      nextQueue = [...availableVideos];
+
       
       // We no longer add previous videos to prevStack
       // This makes the selected video always be the "first" one
@@ -585,17 +587,22 @@
     }
 
     function markVideoAsViewed(video) {
-      // First update session history
+      // Existing code...
       if (!sessionHistory.includes(video)) {
         sessionHistory.push(video);
         sessionStorage.setItem('sessionVideos', JSON.stringify(sessionHistory));
       }
-      
-      // Then update persistent storage
+
       const viewedVideos = JSON.parse(localStorage.getItem('viewedVideos') || '[]');
       if (!viewedVideos.includes(video)) {
         viewedVideos.push(video);
         localStorage.setItem('viewedVideos', JSON.stringify(viewedVideos));
+      }
+
+      // 💥 Remove from unviewedList
+      const index = unviewedList.indexOf(video);
+      if (index !== -1) {
+        unviewedList.splice(index, 1);
       }
     }
 
@@ -690,8 +697,19 @@
     }
 
     function swipe(direction) {
-      if(direction === 'next') {
-        if(nextQueue.length === 0) return;
+      if (direction === 'next') {
+        if (nextQueue.length === 0) {
+          // 🛠 Generate a fresh random unseen video if available
+          const availableVideos = unviewedList.filter(v => v !== current);
+          if (availableVideos.length > 0) {
+            const randomVideo = availableVideos[Math.floor(Math.random() * availableVideos.length)];
+            nextQueue.push(randomVideo);
+          } else {
+            console.log('No more unseen videos available.');
+            return; // Nothing left to swipe
+          }
+        }
+
         prevStack.push(current);
         current = nextQueue.shift();
         animateSwipe(1);
@@ -1193,7 +1211,7 @@
       `;
       
       // Load comments from API
-      fetch(`http://192.168.31.184:3000/api/comments?videoUrl=${encodeURIComponent(current)}`)
+      fetch(`http://158.179.31.237:3000/api/comments?videoUrl=${encodeURIComponent(current)}`)
         .then(res => res.json())
         .then(comments => {
           if (comments.length === 0) {
@@ -1249,7 +1267,7 @@
       commentInput.disabled = true;
       commentSubmitBtn.disabled = true;
       
-      fetch('http://192.168.31.184:3000/api/comments', {
+      fetch('http://158.179.31.237:3000/api/comments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
