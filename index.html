@@ -1212,7 +1212,7 @@
       `;
       
       // Load comments from API
-      fetch(`https://158.179.31.237/api/comments?videoUrl=${encodeURIComponent(current)}`)
+      fetch(`https://207.211.155.225/api/comments?videoUrl=${encodeURIComponent(current)}`)
         .then(res => res.json())
         .then(comments => {
           if (comments.length === 0) {
@@ -1268,7 +1268,7 @@
       commentInput.disabled = true;
       commentSubmitBtn.disabled = true;
       
-      fetch('https://158.179.31.237/api/comments', {
+      fetch('https://207.211.155.225/api/comments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
