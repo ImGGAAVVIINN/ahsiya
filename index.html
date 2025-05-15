@@ -335,6 +335,7 @@
     </div>
     <div class="controls">
       <button id="heart">❤</button>
+      <span id="like-count">0</span>
       <button id="comment">💬</button>
       <button id="share">⤴</button>
     </div>
@@ -397,6 +398,9 @@
         createVideoGrid();
       }
     });
+
+    const heartBtn     = document.getElementById('heart');
+const likeCountEl  = document.getElementById('like-count');
 
     async function loadList() {
       const res = await fetch(textUrl);
@@ -469,6 +473,8 @@
       // Set the selected video as current if not already set
       current = videoSrc;
       
+      loadLikes();
+
       prevStack = [];
       nextQueue = [];
 
@@ -488,6 +494,8 @@
       
       // Mark video as viewed
       markVideoAsViewed(current);
+
+      loadLikes();
       
       // Set up event listeners for navigation
       addListeners();
@@ -732,6 +740,11 @@
         if (e.key === 'ArrowRight') swipe('next');
         if (e.key === 'ArrowLeft') swipe('prev');
         if (e.key === ' ' || e.key === 'k') togglePlayPause(); // Spacebar or K key for play/pause
+        heartBtn.addEventListener('click', e => {
+          e.stopPropagation();
+          postLike();
+        });
+
       });
 
       const vc = document.getElementById('video-container');
@@ -1238,7 +1251,7 @@
     // Render comments to the comments container
     function renderComments(comments) {
       commentsContainer.innerHTML = '';
-      
+
       comments.forEach(comment => {
         const commentElement = document.createElement('div');
         commentElement.className = 'comment';
@@ -1248,7 +1261,7 @@
         `;
         commentsContainer.appendChild(commentElement);
       });
-      
+
       // Scroll to the bottom to show newest comments
       commentsContainer.scrollTop = commentsContainer.scrollHeight;
     }
@@ -1304,6 +1317,33 @@
         commentSubmitBtn.disabled = false;
       });
     }
+
+    // 1) Load + display the current like count
+function loadLikes() {
+  if (!current) return;
+  fetch(`http://207.211.155.225/api/likes?videoUrl=${encodeURIComponent(current)}`)
+    .then(res => res.json())
+    .then(({ likes }) => {
+      likeCountEl.textContent = likes;
+    })
+    .catch(err => console.error('Error fetching likes:', err));
+}
+
+// 2) Send a “like” and re-load count
+function postLike() {
+  if (!current) return;
+  fetch('http://207.211.155.225/api/likes', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ videoUrl: current })
+  })
+    .then(res => res.json())
+    .then(({ likes }) => {
+      likeCountEl.textContent = likes;
+    })
+    .catch(err => console.error('Error posting like:', err));
+}
+
   </script>
 </body>
 </html>
