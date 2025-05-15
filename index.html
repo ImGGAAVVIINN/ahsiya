@@ -1321,7 +1321,7 @@ const likeCountEl  = document.getElementById('like-count');
     // 1) Load + display the current like count
 function loadLikes() {
   if (!current) return;
-  fetch(`http://207.211.155.225/api/likes?videoUrl=${encodeURIComponent(current)}`)
+  fetch(`https://207.211.155.225/api/likes?videoUrl=${encodeURIComponent(current)}`)
     .then(res => res.json())
     .then(({ likes }) => {
       likeCountEl.textContent = likes;
@@ -1332,7 +1332,7 @@ function loadLikes() {
 // 2) Send a “like” and re-load count
 function postLike() {
   if (!current) return;
-  fetch('http://207.211.155.225/api/likes', {
+  fetch('https://207.211.155.225/api/likes', {
     method:  'POST',
     headers: { 'Content-Type': 'application/json' },
     body:    JSON.stringify({ videoUrl: current })
